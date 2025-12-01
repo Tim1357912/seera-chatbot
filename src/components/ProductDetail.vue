@@ -167,10 +167,10 @@ const selectedSize = ref('M')
 const qty = ref(1)
 
 const recommended = ref([
-  { id: 101, name: 'Koko Pria', price: 'Rp200.000', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400'},
-  { id: 102, name: 'Gamis Wanita', price: 'Rp200.000', image: 'https://images.unsplash.com/photo-1583486932668-31780f1f5527?w=400'},
-  { id: 103, name: 'Koko Pria', price: 'Rp200.000', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400'},
-  { id: 104, name: 'Koko Pria', price: 'Rp200.000', image: 'https://images.unsplash.com/photo-1578632292335-df3abbb0d586?w=400'},
+  { id: 101, name: 'Koko Pria Casual', price: 'Rp220.000', image: '/koko-hijau.png'},
+  { id: 102, name: 'Abaya Wanita Syari', price: 'Rp300.000', image: '/abaya-hitam.png' },
+  { id: 103, name: 'Gamis Executive', price: 'Rp350.000', image: '/gamis-p.png'},
+  { id: 104, name: 'Hijab Trendy', price: 'Rp240.000', image: '/hijab.png'},
 ])
 
 // Simulate fetch product by ID
@@ -180,8 +180,8 @@ onMounted(() => {
     id,
     name: 'Koko Pria',
     price: 'Rp200.000',
-    image: 'https://images.unsplash.com/photo-1622470953794-aa9c70b0fb9d?w=400',
-    color: 'Maroon'
+    image: '/koko-abu.png',
+    color: 'Abu'
   }
 })
 </script>

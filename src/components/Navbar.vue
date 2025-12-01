@@ -180,10 +180,12 @@
       </button>
     </div>
     
-    <!-- Logo -->
+    
+       <!-- Logo -->
     <div class="flex items-center gap-3">
       <RouterLink to="/">
-        <img src="/logo.svg" alt="Seera Project" class="h-10">
+        <img v-if="!isDark" src="/logo.svg" alt="Seera Project" class="h-10 transition-all">
+        <img v-else src="/logo-dark.png" alt="Seera Project" class="h-10 transition-all">
       </RouterLink>
     </div>
     

@@ -51,9 +51,9 @@
 
 <script setup>
 const collections = [
-  { name: 'Gamis', image: 'https://images.unsplash.com/photo-1583486932668-31780f1f5527?w=400' },
-  { name: 'Koko', image: 'https://images.unsplash.com/photo-1622470953794-aa9c70b0fb9d?w=400' },
-  { name: 'Abaya', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400' },
-  { name: 'Accessories', image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400' },
+  { name: 'Gamis', image: '/gamis.png' },
+  { name: 'Koko', image: '/koko.png' },
+  { name: 'Abaya', image: '/abaya.png' },
+  { name: 'Accessories', image: '/akse.png' },
 ]
 </script>

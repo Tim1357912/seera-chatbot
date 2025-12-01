@@ -164,18 +164,14 @@ const price = ref(1000000)
 const availability = ref([])
 
 const products = ref([
-  { id: 1, name: 'Koko Pria Premium', price: 'Rp250.000', discount: 'New In', image: 'https://images.unsplash.com/photo-1622470953794-aa9c70b0fb9d?w=400' },
-  { id: 2, name: 'Gamis Wanita Elegant', price: 'Rp280.000', discount: 'New In', image: 'https://images.unsplash.com/photo-1583486932668-31780f1f5527?w=400' },
-  { id: 3, name: 'Koko Pria Modern', price: 'Rp290.000', discount: 'New In', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400' },
-  { id: 4, name: 'Koko Pria Classic', price: 'Rp200.000', discount: 'New In', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400' },
-  { id: 5, name: 'Koko Pria Casual', price: 'Rp220.000', image: 'https://images.unsplash.com/photo-1622470953794-aa9c70b0fb9d?w=400' },
-  { id: 6, name: 'Gamis Wanita Syari', price: 'Rp300.000', image: 'https://images.unsplash.com/photo-1583486932668-31780f1f5527?w=400' },
-  { id: 7, name: 'Koko Pria Executive', price: 'Rp350.000', image: 'https://images.unsplash.com/photo-1578632292335-df3abbb0d586?w=400' },
-  { id: 8, name: 'Koko Pria Trendy', price: 'Rp240.000', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400' },
-  { id: 9, name: 'Gamis Wanita Premium', price: 'Rp320.000', discount: 'Best Seller', image: 'https://images.unsplash.com/photo-1583486932668-31780f1f5527?w=400' },
-  { id: 10, name: 'Koko Pria Formal', price: 'Rp275.000', image: 'https://images.unsplash.com/photo-1622470953794-aa9c70b0fb9d?w=400' },
-  { id: 11, name: 'Gamis Wanita Daily', price: 'Rp260.000', image: 'https://images.unsplash.com/photo-1583486932668-31780f1f5527?w=400' },
-  { id: 12, name: 'Koko Pria Simpel', price: 'Rp210.000', discount: 'Sale', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400' },
+  { id: 1, name: 'Koko Pria Premium', price: 'Rp250.000', discount: 'New In', image: '/koko-abu.png' },
+  { id: 2, name: 'Koko Pria Elegant', price: 'Rp280.000', discount: 'New In', image: '/koko-putih.png' },
+  { id: 3, name: 'Koko Pria Modern', price: 'Rp290.000', discount: 'New In', image: '/koko-hijau.png' },
+  { id: 4, name: 'Koko Pria Classic', price: 'Rp200.000', discount: 'New In', image: '/koko-biru.png' },
+  { id: 5, name: 'Koko Pria Casual', price: 'Rp220.000', image: '/koko-bt.png' },
+  { id: 6, name: 'Koko Pria Keren', price: 'Rp300.000', image: '/koko-t.png' },
+  { id: 7, name: 'Koko Pria Executive', price: 'Rp350.000', image: '/koko-w.png' },
+  { id: 8, name: 'Koko Pria Trendy', price: 'Rp240.000', image: '/koko-coklat.png' },
 ])
 
 const filteredProducts = computed(() => {
