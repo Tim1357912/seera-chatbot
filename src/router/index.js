@@ -75,7 +75,22 @@ const routes = [
   path: '/order-detail',
   name: 'OrderDetail',
   component: () => import('../components/OrderDetail.vue')
-  }
+  },
+  {
+  path: '/syarat-ketentuan',
+  name: 'TermsConditions',
+  component: () => import('../components/TermsConditions.vue')
+},
+{
+  path: '/privacy-policy',
+  name: 'PrivacyPolicy',
+  component: () => import('../components/PrivacyPolicy.vue')
+},
+{
+  path: '/artikel',
+  name: 'Artikel',
+  component: () => import('../components/Artikel.vue')
+}
 ]
 
 const router = createRouter({

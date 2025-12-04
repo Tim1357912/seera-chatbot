@@ -52,7 +52,7 @@
 
         <div class="flex flex-col md:flex-row justify-between items-center md:items-start mb-8 md:mb-12 gap-6 md:gap-8">
           <!-- Links -->
-          <div class="flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-16 text-center md:text-left">
+          <div class="flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-8 lg:gap-12 text-center md:text-left">
             <RouterLink
               to="/about"
               class="text-black dark:text-white text-sm sm:text-base hover:text-[#C99F53] dark:hover:text-[#C99F53] transition-colors duration-300"
@@ -66,10 +66,22 @@
               Contact
             </RouterLink>
             <RouterLink
-              to="/term"
+              to="/syarat-ketentuan"
               class="text-black dark:text-white text-sm sm:text-base hover:text-[#C99F53] dark:hover:text-[#C99F53] transition-colors duration-300"
             >
-              Term & Conditions
+              Syarat & Ketentuan
+            </RouterLink>
+            <RouterLink
+              to="/privacy-policy"
+              class="text-black dark:text-white text-sm sm:text-base hover:text-[#C99F53] dark:hover:text-[#C99F53] transition-colors duration-300"
+            >
+              Privacy Policy
+            </RouterLink>
+            <RouterLink
+              to="/artikel"
+              class="text-black dark:text-white text-sm sm:text-base hover:text-[#C99F53] dark:hover:text-[#C99F53] transition-colors duration-300"
+            >
+              Artikel
             </RouterLink>
           </div>
 
