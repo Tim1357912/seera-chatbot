@@ -8,19 +8,19 @@
 
       <!-- LEFT -->
       <div>
-        <h2 class="text-xl font-semibold mb-4">Address</h2>
+        <h2 class="text-xl font-semibold mb-4">Alamat</h2>
 
         <div class="text-sm mb-4">
-          Already have account?
+          Sudah mempunyai akun?
           <router-link to="/login" class="underline">LOG IN</router-link>
         </div>
 
         <div class="space-y-3">
-          <input class="input" placeholder="Country/Region">
-          <input class="input" placeholder="Full Name">
-          <input class="input" placeholder="Phone Number">
-          <input class="input" placeholder="City/District">
-          <textarea class="input" placeholder="Address"></textarea>
+          <input class="input" placeholder="Negara">
+          <input class="input" placeholder="Nama Lengkap">
+          <input class="input" placeholder="Nomor Telepon">
+          <input class="input" placeholder="Kota/Kabupaten">
+          <textarea class="input" placeholder="Alamat"></textarea>
         </div>
 
         <h2 class="text-xl font-semibold mt-8 mb-3">Metode Pengiriman</h2>

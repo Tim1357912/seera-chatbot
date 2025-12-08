@@ -1,10 +1,10 @@
 <template>
   <div class="min-h-screen bg-white dark:bg-black transition-colors duration-300">
     <!-- Hero Section -->
-     <section class="relative w-full h-[200px] sm:h-[280px] md:h-[320px] overflow-hidden">
+    <section class="relative w-full h-[200px] sm:h-[280px] md:h-[320px] overflow-hidden">
       <img 
         src="/term.png" 
-        alt="Syarat & Ketentuan" 
+        alt="Artikel" 
         class="w-full h-full object-cover object-center"
       >
       <div class="absolute inset-0 flex items-center justify-center">
@@ -41,7 +41,7 @@
             </p>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-500 dark:text-gray-500">
-                3 Desember 2025
+                3 Desember 2024
               </span>
               <button class="text-seera-gold dark:text-[#C99F53] font-semibold hover:underline">
                 Baca Selengkapnya →
@@ -99,9 +99,11 @@
               <span class="text-xs text-gray-500 dark:text-gray-500">
                 {{ article.date }}
               </span>
-              <button class="text-seera-gold dark:text-[#C99F53] text-sm font-semibold hover:underline">
-                Baca →
-              </button>
+              <RouterLink :to="`/artikel/${article.id}`">
+                <button class="text-seera-gold dark:text-[#C99F53] text-sm font-semibold hover:underline">
+                  Baca →
+                </button>
+              </RouterLink>
             </div>
           </div>
         </article>
@@ -125,6 +127,16 @@
           Subscribe newsletter kami untuk mendapatkan tips fashion, promo eksklusif, dan artikel terbaru langsung ke email Anda
         </p>
         
+        <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+          <input 
+            type="email" 
+            placeholder="Masukkan email Anda"
+            class="flex-1 px-6 py-3 rounded-md border dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-seera-gold"
+          />
+          <button class="bg-seera-gold dark:bg-[#C99F53] text-black dark:text-white px-8 py-3 font-semibold rounded-md hover:bg-opacity-90 transition-all whitespace-nowrap">
+            Subscribe
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -139,7 +151,7 @@ const categories = [
   'Semua',
   'Fashion Tips',
   'Styling Guide',
-  'Trend 2025',
+  'Trend 2024',
   'Product Review',
   'Behind The Scene'
 ]
@@ -151,15 +163,15 @@ const articles = [
     excerpt: 'Gamis bukan hanya untuk acara formal. Pelajari cara styling yang tepat untuk berbagai kesempatan.',
     category: 'Fashion Tips',
     image: '/gamis.png',
-    date: '3 Des 2025'
+    date: '3 Des 2024'
   },
   {
     id: 2,
-    title: 'Tren Warna Hijab Favorit di 2025',
+    title: 'Tren Warna Hijab Favorit di 2024',
     excerpt: 'Warna-warna earth tone masih mendominasi. Simak kombinasi warna yang tepat untuk penampilanmu.',
-    category: 'Trend 2025',
+    category: 'Trend 2024',
     image: '/koko.png',
-    date: '2 Des 2025'
+    date: '2 Des 2024'
   },
   {
     id: 3,
@@ -167,7 +179,7 @@ const articles = [
     excerpt: 'Koko tidak harus terlihat kaku. Temukan style koko modern yang cocok untuk berbagai aktivitas.',
     category: 'Styling Guide',
     image: '/koko-hijau.png',
-    date: '1 Des 2025'
+    date: '1 Des 2024'
   },
   {
     id: 4,
@@ -175,7 +187,7 @@ const articles = [
     excerpt: 'Detail review lengkap tentang kualitas bahan, jahitan, dan kenyamanan abaya premium kami.',
     category: 'Product Review',
     image: '/gamis.png',
-    date: '30 Nov 2025'
+    date: '30 Nov 2024'
   },
   {
     id: 5,
@@ -183,7 +195,7 @@ const articles = [
     excerpt: 'Intip proses di balik pembuatan gamis berkualitas dari pemilihan bahan hingga finishing.',
     category: 'Behind The Scene',
     image: '/koko.png',
-    date: '29 Nov 2025'
+    date: '29 Nov 2024'
   },
   {
     id: 6,
@@ -191,7 +203,7 @@ const articles = [
     excerpt: 'Cara mencuci, menyimpan, dan merawat gamis, koko, dan abaya agar tetap terlihat seperti baru.',
     category: 'Fashion Tips',
     image: '/koko-hijau.png',
-    date: '28 Nov 2025'
+    date: '28 Nov 2024'
   },
   {
     id: 7,
@@ -199,7 +211,7 @@ const articles = [
     excerpt: 'Aksesoris yang tepat bisa mengangkat penampilanmu. Simak rekomendasi aksesoris terbaik.',
     category: 'Styling Guide',
     image: '/gamis.png',
-    date: '27 Nov 2025'
+    date: '27 Nov 2024'
   },
   {
     id: 8,
@@ -207,15 +219,15 @@ const articles = [
     excerpt: 'Tampil anggun dan sopan di acara pernikahan dengan pilihan outfit modest yang stylish.',
     category: 'Fashion Tips',
     image: '/koko.png',
-    date: '26 Nov 2025'
+    date: '26 Nov 2024'
   },
   {
     id: 9,
-    title: 'Trend Hijab 2025: Dari Pashmina hingga Turkish',
+    title: 'Trend Hijab 2024: Dari Pashmina hingga Turkish',
     excerpt: 'Berbagai style hijab yang sedang trending dan cara memakainya untuk berbagai bentuk wajah.',
-    category: 'Trend 2025',
+    category: 'Trend 2024',
     image: '/koko-hijau.png',
-    date: '25 Nov 2025'
+    date: '25 Nov 2024'
   }
 ]
 

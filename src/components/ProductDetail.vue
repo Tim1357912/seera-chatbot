@@ -81,12 +81,51 @@
           <!-- DESCRIPTION -->
           <div class="mt-10">
             <h2 class="text-lg font-semibold mb-3 text-black dark:text-white">Description</h2>
-            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur. Quis aute iure reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+
+            <!-- SHORT DESC -->
+            <p 
+              v-if="!showMore" 
+              class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed"
+            >
+              {{ product.shortDescription }}
             </p>
 
-            <button class="mt-3 text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-[#C99F53] flex items-center gap-1 transition-colors">
-              See more →
+            <!-- FULL DESC -->
+            <div 
+              v-if="showMore" 
+              class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed space-y-4"
+            >
+              <p>{{ product.fullDescription }}</p>
+
+              <!-- SIZE CHART -->
+              <table class="w-full text-left border border-gray-300 dark:border-gray-700">
+                <thead>
+                  <tr class="bg-gray-100 dark:bg-gray-800">
+                    <th class="px-2 py-1 border-b">Size</th>
+                    <th class="px-2 py-1 border-b">Chest (cm)</th>
+                    <th class="px-2 py-1 border-b">Length (cm)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    v-for="size in product.sizeChart" 
+                    :key="size.label" 
+                    class="border-b border-gray-200 dark:border-gray-700"
+                  >
+                    <td class="px-2 py-1">{{ size.label }}</td>
+                    <td class="px-2 py-1">{{ size.chest }}</td>
+                    <td class="px-2 py-1">{{ size.length }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- SEE MORE / SEE LESS BUTTON -->
+            <button 
+              @click="showMore = !showMore"
+              class="mt-3 text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-[#C99F53] flex items-center gap-1 transition-colors"
+            >
+              {{ showMore ? 'See less ←' : 'See more →' }}
             </button>
           </div>
 
@@ -104,7 +143,7 @@
         </div>
 
         <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-6">
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur.
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit.
         </p>
 
         <button class="bg-yellow-700 dark:bg-[#C99F53] text-white px-8 py-3 hover:bg-yellow-800 dark:hover:bg-[#B48B3C] transition-colors">
@@ -126,7 +165,7 @@
           >
             <div class="relative">
               <img :src="item.image" class="w-full h-64 sm:h-72 md:h-80 lg:h-96 object-cover" />
-              
+
               <button class="absolute bottom-2 right-2 bg-white dark:bg-gray-800 rounded-full p-2 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -154,12 +193,22 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
+const showMore = ref(false)
+
 const product = ref({
   id: null,
   name: '',
   price: '',
   image: '',
-  color: 'Maroon'
+  color: '',
+  shortDescription: 'Koko pria premium, bahan nyaman, adem dipakai harian.',
+  fullDescription: 'Koko pria premium dibuat dari bahan katun terbaik. Nyaman dipakai, adem, dan cocok untuk acara santai maupun formal. Dijahit dengan detail rapi sehingga memberikan tampilan elegan tanpa mengurangi kenyamanan.',
+  sizeChart: [
+    { label: 'S', chest: 100, length: 70 },
+    { label: 'M', chest: 104, length: 72 },
+    { label: 'L', chest: 108, length: 74 },
+    { label: 'XL', chest: 112, length: 76 },
+  ]
 })
 
 const sizes = ['S','M','L','XL','XXL']
@@ -176,12 +225,10 @@ const recommended = ref([
 // Simulate fetch product by ID
 onMounted(() => {
   const id = Number(route.params.id)
-  product.value = {
-    id,
-    name: 'Koko Pria',
-    price: 'Rp200.000',
-    image: '/koko-abu.png',
-    color: 'Abu'
-  }
+  product.value.id = id
+  product.value.name = 'Koko Pria'
+  product.value.price = 'Rp200.000'
+  product.value.image = '/koko-abu.png'
+  product.value.color = 'Abu'
 })
 </script>
