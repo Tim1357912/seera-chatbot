@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-white dark:bg-black transition-colors duration-300">
-    <!-- Hero Section -->
     <section class="relative w-full h-[200px] sm:h-[280px] md:h-[320px] overflow-hidden">
       <img 
         src="/term.png" 
@@ -9,49 +8,49 @@
       >
       <div class="absolute inset-0 flex items-center justify-center">
         <h1 class="text-3xl sm:text-4xl md:text-5xl font-serif 
-                   text-black dark:text-white">
+                  text-black dark:text-white">
           Artikel & Blog
         </h1>
       </div>
     </section>
 
-    <!-- Featured Article -->
     <div class="max-w-6xl mx-auto px-6 sm:px-8 py-16">
-      <div class="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg mb-16 transition-colors">
-        <div class="grid md:grid-cols-2 gap-0">
-          <div class="relative h-64 md:h-full">
-            <img 
-              src="/gamis.png" 
-              alt="Featured Article"
-              class="w-full h-full object-cover"
-            />
-            <span class="absolute top-4 left-4 bg-seera-gold text-black px-4 py-1 text-sm font-semibold">
-              FEATURED
-            </span>
-          </div>
-          <div class="p-8 md:p-12 flex flex-col justify-center">
-            <span class="text-seera-gold dark:text-[#C99F53] text-sm font-semibold mb-2">
-              FASHION TIPS
-            </span>
-            <h2 class="font-serif text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              10 Cara Mix & Match Gamis untuk Berbagai Acara
-            </h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-              Gamis bukan hanya untuk acara formal. Pelajari cara styling gamis yang tepat untuk berbagai kesempatan, dari casual hingga formal dengan tetap terlihat modest dan fashionable.
-            </p>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-500 dark:text-gray-500">
-                3 Desember 2024
+      <RouterLink :to="`/artikel/1`">
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg mb-16 transition-colors group cursor-pointer">
+          <div class="grid md:grid-cols-2 gap-0">
+            <div class="relative h-64 md:h-full overflow-hidden">
+              <img 
+                src="/gamis.png" 
+                alt="Featured Article"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              <span class="absolute top-4 left-4 bg-seera-gold text-black px-4 py-1 text-sm font-semibold">
+                FEATURED
               </span>
-              <button class="text-seera-gold dark:text-[#C99F53] font-semibold hover:underline">
-                Baca Selengkapnya →
-              </button>
+            </div>
+            <div class="p-8 md:p-12 flex flex-col justify-center">
+              <span class="text-seera-gold dark:text-[#C99F53] text-sm font-semibold mb-2">
+                FASHION TIPS
+              </span>
+              <h2 class="font-serif text-3xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-seera-gold dark:group-hover:text-[#C99F53] transition-colors">
+                10 Cara Mix & Match Gamis untuk Berbagai Acara
+              </h2>
+              <p class="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                Gamis bukan hanya untuk acara formal. Pelajari cara styling gamis yang tepat untuk berbagai kesempatan, dari casual hingga formal dengan tetap terlihat modest dan fashionable.
+              </p>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-500 dark:text-gray-500">
+                  3 Desember 2024
+                </span>
+                <span class="text-seera-gold dark:text-[#C99F53] font-semibold hover:underline">
+                  Baca Selengkapnya →
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </RouterLink>
 
-      <!-- Category Filter -->
       <div class="flex flex-wrap gap-3 mb-12">
         <button 
           v-for="category in categories" 
@@ -68,48 +67,49 @@
         </button>
       </div>
 
-      <!-- Articles Grid -->
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        <article 
+        <RouterLink 
           v-for="article in filteredArticles" 
           :key="article.id"
-          class="bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all group"
+          :to="`/artikel/${article.id}`"
+          class="block"
         >
-          <div class="relative overflow-hidden">
-            <img 
-              :src="article.image" 
-              :alt="article.title"
-              class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-300"
-            />
-            <span class="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 text-xs font-semibold">
-              {{ article.category }}
-            </span>
-          </div>
-          
-          <div class="p-6">
-            <h3 class="font-serif text-xl font-semibold text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-seera-gold dark:group-hover:text-[#C99F53] transition-colors">
-              {{ article.title }}
-            </h3>
-            
-            <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
-              {{ article.excerpt }}
-            </p>
-            
-            <div class="flex items-center justify-between pt-4 border-t dark:border-gray-700">
-              <span class="text-xs text-gray-500 dark:text-gray-500">
-                {{ article.date }}
+          <article 
+            class="bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all group h-full flex flex-col"
+          >
+            <div class="relative overflow-hidden">
+              <img 
+                :src="article.image" 
+                :alt="article.title"
+                class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              <span class="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 text-xs font-semibold">
+                {{ article.category }}
               </span>
-              <RouterLink :to="`/artikel/${article.id}`">
-                <button class="text-seera-gold dark:text-[#C99F53] text-sm font-semibold hover:underline">
-                  Baca →
-                </button>
-              </RouterLink>
             </div>
-          </div>
-        </article>
+            
+            <div class="p-6 flex flex-col flex-grow">
+              <h3 class="font-serif text-xl font-semibold text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-seera-gold dark:group-hover:text-[#C99F53] transition-colors">
+                {{ article.title }}
+              </h3>
+              
+              <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3 flex-grow">
+                {{ article.excerpt }}
+              </p>
+              
+              <div class="flex items-center justify-between pt-4 border-t dark:border-gray-700 mt-auto">
+                <span class="text-xs text-gray-500 dark:text-gray-500">
+                  {{ article.date }}
+                </span>
+                <span class="text-seera-gold dark:text-[#C99F53] text-sm font-semibold hover:underline">
+                  Baca →
+                </span>
+              </div>
+            </div>
+          </article>
+        </RouterLink>
       </div>
 
-      <!-- Load More Button -->
       <div class="text-center mt-12">
         <button class="bg-seera-gold dark:bg-[#C99F53] text-black dark:text-white px-12 py-3 font-semibold rounded-md hover:bg-opacity-90 transition-all">
           Muat Lebih Banyak
@@ -117,7 +117,6 @@
       </div>
     </div>
 
-    <!-- Newsletter Section -->
     <div class="bg-gray-50 dark:bg-gray-900 py-16 transition-colors">
       <div class="max-w-3xl mx-auto px-6 sm:px-8 text-center">
         <h2 class="font-serif text-3xl font-bold text-gray-900 dark:text-white mb-4">
@@ -144,6 +143,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+// Perlu mengimpor RouterLink dari 'vue-router' atau framework Anda
+// Jika Anda menggunakan Nuxt/Next, bisa jadi ini sudah otomatis ada.
+// import { RouterLink } from 'vue-router' 
 
 const selectedCategory = ref('Semua')
 
