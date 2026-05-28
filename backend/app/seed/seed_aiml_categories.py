@@ -2,6 +2,10 @@
 from sqlalchemy.orm import Session as DBSession
 from app.models.aiml_category import AIMLCategory
 
+GENDER_QR = [
+    {"label": "Pakaian Pria", "value": "MALE"},
+    {"label": "Pakaian Wanita", "value": "FEMALE"},
+]
 
 SKINTONE_QR = [
     {"label": "Tipe I - Very Fair", "value": "I"},
@@ -44,6 +48,14 @@ EDU_TOPICS_QR = [
     {"label": "Mulai rekomendasi", "value": "START_RECOMMENDATION"},
 ]
 
+{
+    "pattern": "WELCOME_AND_GENDER",
+    "template": (
+        "Halo! Saya akan membantu merekomendasikan warna pakaian yang sesuai dengan warna kulit Anda. "
+        "Pertama, pilih kategori pakaian yang Anda cari."
+    ),
+    "quick_replies": GENDER_QR,
+},
 
 AIML_SEED = [
     {

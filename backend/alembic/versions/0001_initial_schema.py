@@ -30,9 +30,10 @@ def upgrade() -> None:
     op.create_table(
         "sessions",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("gender", sa.String(10), nullable=True),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
         sa.Column("session_status", sa.String(30), nullable=False, server_default="ACTIVE"),
-        sa.Column("conversation_state", sa.String(50), nullable=False, server_default="WAITING_SKIN_TONE"),
+        sa.Column("conversation_state", sa.String(50), nullable=False, server_default="WAITING_GENDER"),
         sa.Column("skintone_snapshot", sa.Numeric(4, 2), nullable=True),
         sa.Column("undertone_snapshot", sa.String(20), nullable=True),
         sa.Column("y1_continuous", sa.Numeric(8, 6), nullable=True),
@@ -46,7 +47,7 @@ def upgrade() -> None:
             "session_status IN ('ACTIVE','COMPLETED','CANCELLED')", name="ck_session_status"
         ),
         sa.CheckConstraint(
-            "conversation_state IN ('WAITING_SKIN_TONE','WAITING_UNDERTONE','WAITING_CONFIRMATION','WAITING_CHANGE_SELECTION','SHOWING_RECOMMENDATION','EDUCATION')",
+            "conversation_state IN ('WAITING_GENDER','WAITING_SKIN_TONE','WAITING_UNDERTONE','WAITING_CONFIRMATION','WAITING_CHANGE_SELECTION','SHOWING_RECOMMENDATION','EDUCATION')",
             name="ck_conversation_state",
         ),
     )
@@ -56,6 +57,7 @@ def upgrade() -> None:
     op.create_table(
         "skin_characteristics",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("gender", sa.String(10), nullable=True),
         sa.Column("session_id", sa.Integer, sa.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
         sa.Column("skintone", sa.Numeric(4, 2), nullable=True),

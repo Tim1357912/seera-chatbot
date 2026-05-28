@@ -70,6 +70,24 @@
                 <!-- Text bubble -->
                 <div v-if="item.text" class="seera-chatbot__bubble" v-html="formatBubble(item.text)" />
 
+                <!-- ═══ Gender selector ═══ -->
+                <div v-if="item.kind === 'gender'" class="seera-chatbot__block">
+                  <div class="seera-chatbot__block-tag">GENDER</div>
+                  <div class="seera-chatbot__block-title">Kamu identifikasi sebagai?</div>
+                  <div class="seera-chatbot__quick-replies" style="margin-top: 10px;">
+                    <button
+                      v-for="g in GENDER_DATA"
+                      :key="g.id"
+                      class="seera-chatbot__qr"
+                      :class="{ 'seera-chatbot__qr--primary': selectedGender === g.id }"
+                      :disabled="loading || idx !== lastBotIndex || selectedGender !== null"
+                      @click="!loading && idx === lastBotIndex && !selectedGender && pickGender(g)"
+                    >
+                      {{ g.label }}
+                    </button>
+                  </div>
+                </div>
+
                 <!-- ═══ Fitzpatrick skin tone selector ═══ -->
                 <div v-if="item.kind === 'fitz'" class="seera-chatbot__block">
                   <div class="seera-chatbot__block-tag">FITZPATRICK SCALE · I–VI</div>
@@ -322,6 +340,11 @@ const FITZPATRICK_DATA = [
   { num: 6, code: 'VI',  name: 'Dark Brown',      hex: '#4A2E20' },
 ]
 
+const GENDER_DATA = [
+  { id: 'MALE',   label: 'Pria' },
+  { id: 'FEMALE', label: 'Wanita' },
+]
+
 const UNDERTONE_DATA = [
   { id: 'cool',    code: 'COOL',    label: 'Biru / Ungu',      cap: 'Cool' },
   { id: 'neutral', code: 'NEUTRAL', label: 'Campuran',         cap: 'Neutral' },
@@ -429,6 +452,7 @@ function close() { isOpen.value = false }
 
 async function resetSession() {
   messages.value = []
+  selectedGender.value = null
   sessionId.value = null
   conversationState.value = null
   selectedSkinTone.value = null
@@ -445,7 +469,8 @@ async function startConversation() {
     const data = await chatbotApi.start()
     sessionId.value = data.session_id
     conversationState.value = data.conversation_state
-    pushBot({ text: data.message, kind: 'fitz' })
+    // pushBot({ text: data.message, kind: 'fitz' })
+    pushBot({ text: data.message, kind: 'gender' })
   } catch {
     pushBot({ text: 'Tidak bisa terhubung ke server Seera. Pastikan backend berjalan di http://localhost:8000.' })
   } finally {
@@ -466,6 +491,28 @@ async function restartProfiling() {
     pushBot({ text: data.message, kind: 'fitz' })
   } catch {
     pushBot({ text: 'Gagal memulai ulang sesi.' })
+  } finally {
+    loading.value = false
+  }
+}
+
+const selectedGender = ref(null)  // tambah di reactive state
+
+async function pickGender(g) {
+  if (loading.value || selectedGender.value) return
+  selectedGender.value = g.id
+  pushUser(g.label)
+  await sendGender(g.id)
+}
+
+async function sendGender(gender) {
+  loading.value = true
+  try {
+    const data = await chatbotApi.setGender(sessionId.value, gender)
+    conversationState.value = data.conversation_state
+    pushBot({ text: data.message, kind: 'fitz' })
+  } catch (err) {
+    pushBot({ text: err.body?.detail?.message || 'Pilihan gender tidak valid.', kind: 'gender' })
   } finally {
     loading.value = false
   }

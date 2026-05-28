@@ -17,6 +17,7 @@ from app.services.seasonal_classifier import classify
 from app.services.color_match_service import compute_color_score, LABEL_INDONESIAN, label_for_score
 from app.services.product_ranker import aggregate_product_score, sort_items
 from app.core.exceptions import RecommendationNotFoundError
+from app.models.session import Session
 
 
 ROLE_ORDER = {"DOMINANT": 0, "SECONDARY": 1, "MOTIF": 2, "ACCENT": 3}
@@ -48,8 +49,10 @@ class RecommendationService:
 
         return sr
 
-    def _available_products(self) -> list[Product]:
+    def _available_products(self, gender: Optional[str] = None) -> list[Product]:
         stmt = select(Product).where(Product.is_active.is_(True), Product.stock > 0)
+        if gender:
+            stmt = stmt.where(Product.gender == gender)
         return list(self.db.execute(stmt).scalars().all())
 
     def generate_recommendation(self, session: Session, seasonal_result: SeasonalResult, top_n: int = 5) -> dict:
@@ -60,8 +63,8 @@ class RecommendationService:
         )
         self.db.add(recommendation)
         self.db.flush()
-
-        products = self._available_products()
+        gender = session.gender
+        products = self._available_products(gender=gender)
         all_match_filters = []
         ranking_rows: list[dict] = []
 

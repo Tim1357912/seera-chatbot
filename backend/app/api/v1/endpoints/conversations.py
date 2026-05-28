@@ -15,6 +15,7 @@ from app.schemas.conversation import (
     ConfirmRequest,
     FilterRequest,
     FreeTextRequest,
+    GenderRequest,
 )
 from app.services.conversation_service import (
     ConversationService,
@@ -23,6 +24,7 @@ from app.services.conversation_service import (
     STATE_WAITING_CONFIRMATION,
     STATE_WAITING_CHANGE_SELECTION,
     STATE_SHOWING_RECOMMENDATION,
+    STATE_WAITING_GENDER,
 )
 from app.services.aiml_interpreter import AIMLInterpreter
 from app.services.input_validation_service import (
@@ -44,7 +46,7 @@ def start_conversation(payload: StartConversationRequest, db: DBSession = Depend
     session = conv.create_session(
         user_fingerprint=payload.user_fingerprint, buyer_id=payload.buyer_id
     )
-    response = aiml.respond("WELCOME_AND_SKINTONE_LIST")
+    response = aiml.respond("WELCOME_AND_GENDER")
     conv.log_message(session, response["message"], "BOT", aiml_category_id=response["aiml_category_id"])
 
     db.commit()
@@ -56,6 +58,39 @@ def start_conversation(payload: StartConversationRequest, db: DBSession = Depend
         "quick_replies": response["quick_replies"],
     }
 
+@router.post("/{session_id}/gender")
+def set_gender(session_id: int, payload: GenderRequest, db: DBSession = Depends(get_db)):
+    conv = ConversationService(db)
+    aiml = AIMLInterpreter(db)
+
+    session = conv.get_active_session(session_id)
+    conv.require_state(session, STATE_WAITING_GENDER)
+
+    gender = payload.gender.upper()
+    if gender not in ("MALE", "FEMALE"):
+        response = aiml.respond("NOT_UNDERSTOOD")
+        conv.log_message(session, response["message"], "BOT", aiml_category_id=response["aiml_category_id"])
+        db.commit()
+        raise InvalidConversationStateError(response["message"])
+
+    conv.log_message(session, payload.gender, "BUYER")
+
+    sc = conv.get_or_create_skin_characteristic(session)
+    sc.gender = gender
+    session.gender = gender
+    conv.set_state(session, STATE_WAITING_SKIN_TONE)
+
+    response = aiml.respond("WELCOME_AND_SKINTONE_LIST")
+    conv.log_message(session, response["message"], "BOT", aiml_category_id=response["aiml_category_id"])
+
+    db.commit()
+    return {
+        "session_id": session.id,
+        "session_status": session.session_status,
+        "conversation_state": session.conversation_state,
+        "message": response["message"],
+        "quick_replies": response["quick_replies"],
+    }
 
 @router.post("/{session_id}/skin-tone")
 def set_skin_tone(session_id: int, payload: SkinToneRequest, db: DBSession = Depends(get_db)):
