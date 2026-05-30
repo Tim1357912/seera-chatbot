@@ -486,9 +486,10 @@ async function restartProfiling() {
     conversationState.value = data.conversation_state
     selectedSkinTone.value = null
     selectedUndertone.value = null
+    selectedGender.value = null 
     feedbackRating.value = 0
     feedbackComment.value = ''
-    pushBot({ text: data.message, kind: 'fitz' })
+    pushBot({ text: data.message, kind: 'gender' })
   } catch {
     pushBot({ text: 'Gagal memulai ulang sesi.' })
   } finally {
@@ -695,7 +696,7 @@ async function handleQuickReply(qr) {
   if (value === 'START_PROFILING') return startConversation()
   if (value === 'EDUCATION') return openEducationTopics()
   if (value === 'START_RECOMMENDATION') {
-    conversationState.value = 'WAITING_SKIN_TONE'
+    conversationState.value = 'WAITING_GENDER'
     return restartProfiling()
   }
   if (EDUCATION_TOPIC_CODES.has(value)) return openEducationContent(value)
