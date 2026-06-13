@@ -60,10 +60,10 @@ resource "aws_cloudfront_origin_access_control" "assets" {
 }
 
 resource "aws_cloudfront_distribution" "assets" {
-  enabled             = true
-  comment             = "${local.name_prefix} static assets"
-  aliases             = var.assets_domain != "" && var.assets_acm_certificate_arn != "" ? [var.assets_domain] : []
-  price_class         = "PriceClass_100"
+  enabled     = true
+  comment     = "${local.name_prefix} static assets"
+  aliases     = var.assets_domain != "" && var.assets_acm_certificate_arn != "" ? [var.assets_domain] : []
+  price_class = "PriceClass_100"
 
   origin {
     domain_name              = aws_s3_bucket.assets.bucket_regional_domain_name
