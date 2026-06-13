@@ -31,6 +31,7 @@ backend_image_uri = ""
 
 db_name                = "seera_chatbot"
 db_username            = "seera_admin"
+postgres_engine_version = null
 db_instance_class      = "db.t4g.micro"
 db_deletion_protection = true
 

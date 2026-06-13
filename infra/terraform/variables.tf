@@ -163,6 +163,22 @@ variable "db_username" {
   default     = "seera_admin"
 }
 
+variable "postgres_engine_version" {
+  type        = string
+  description = "Optional PostgreSQL engine version. Leave null/empty so AWS selects a supported default in the target region."
+  default     = null
+  nullable    = true
+
+  validation {
+    condition = (
+      var.postgres_engine_version == null ||
+      trimspace(var.postgres_engine_version) == "" ||
+      can(regex("^\\d+(\\.\\d+)?$", trimspace(var.postgres_engine_version)))
+    )
+    error_message = "postgres_engine_version must be null, empty, a major version like 16, or a supported minor version like 16.8."
+  }
+}
+
 variable "db_instance_class" {
   type        = string
   description = "RDS instance class."
