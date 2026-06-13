@@ -1,4 +1,12 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '')
+const API_BASE = configuredApiBase || (import.meta.env.PROD ? '' : 'http://localhost:8000')
+
+function apiBase() {
+  if (!API_BASE) {
+    throw new Error('Missing VITE_API_BASE_URL for production build. Set it to the HTTPS backend API URL.')
+  }
+  return API_BASE
+}
 
 function fingerprint() {
   const KEY = 'seera_fingerprint'
@@ -12,7 +20,7 @@ function fingerprint() {
 
 async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) }
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  const response = await fetch(`${apiBase()}${path}`, { ...options, headers })
   const text = await response.text()
   let payload
   try {

@@ -34,7 +34,7 @@ alembic upgrade head
 python -m app.seed.run_seed
 ```
 
-Saat startup FastAPI juga otomatis menjalankan `Base.metadata.create_all()` agar bisa langsung dipakai.
+Saat `APP_ENV` bukan `production`, startup FastAPI masih menjalankan `Base.metadata.create_all()` untuk kompatibilitas lokal/SQLite. Production tidak menjalankan `create_all()`; schema production harus dikelola dengan Alembic.
 
 ## Run
 

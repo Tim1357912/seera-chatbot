@@ -46,10 +46,12 @@
 </template>
 
 <script setup>
+import { assetUrl } from '../utils/assets'
+
 const collections = [
-  { name: 'Gamis', image: '/gamis.png' },
-  { name: 'Koko', image: '/koko.png' },
-  { name: 'Abaya', image: '/abaya.png' },
-  { name: 'Accessories', image: '/akse.png' },
+  { name: 'Gamis', image: assetUrl('gamis.png') },
+  { name: 'Koko', image: assetUrl('koko.png') },
+  { name: 'Abaya', image: assetUrl('abaya.png') },
+  { name: 'Accessories', image: assetUrl('akse.png') },
 ]
 </script>

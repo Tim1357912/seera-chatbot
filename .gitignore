@@ -13,6 +13,16 @@ lerna-debug.log*
 !.env.example
 !backend/.env.example
 
+# Terraform and deployment state
+.terraform/
+infra/terraform/backend.tf
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+
 # Python
 __pycache__/
 *.py[cod]

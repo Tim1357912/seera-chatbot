@@ -150,20 +150,21 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { assetUrl } from '../utils/assets'
 
 const showFilter = ref(false);
 const price = ref(1000000);
 const availability = ref([]);
 
 const products = ref([
-  { id: 1, name: 'Koko Pria Premium', price: 'Rp250.000', discount: 'New In', image: '/koko-putih.png' },
-  { id: 2, name: 'Gamis Wanita Elegant', price: 'Rp280.000', discount: 'New In', image: '/gamis-pink.png' },
-  { id: 3, name: 'Koko Pria Modern', price: 'Rp290.000', discount: 'New In', image: '/koko-abu.png' },
-  { id: 4, name: 'Gamis Wanita Classic', price: 'Rp200.000', discount: 'New In', image: '/gamis-coklat.png' },
-  { id: 5, name: 'Koko Pria Casual', price: 'Rp220.000', image: '/koko-hijau.png' },
-  { id: 6, name: 'Abaya Wanita Syari', price: 'Rp300.000', image: '/abaya-hitam.png' },
-  { id: 7, name: 'Gamis Executive', price: 'Rp350.000', image: '/gamis-p.png' },
-  { id: 8, name: 'Hijab Trendy', price: 'Rp240.000', image: '/hijab.png' },
+  { id: 1, name: 'Koko Pria Premium', price: 'Rp250.000', discount: 'New In', image: assetUrl('koko-putih.png') },
+  { id: 2, name: 'Gamis Wanita Elegant', price: 'Rp280.000', discount: 'New In', image: assetUrl('gamis-pink.png') },
+  { id: 3, name: 'Koko Pria Modern', price: 'Rp290.000', discount: 'New In', image: assetUrl('koko-abu.png') },
+  { id: 4, name: 'Gamis Wanita Classic', price: 'Rp200.000', discount: 'New In', image: assetUrl('gamis-coklat.png') },
+  { id: 5, name: 'Koko Pria Casual', price: 'Rp220.000', image: assetUrl('koko-hijau.png') },
+  { id: 6, name: 'Abaya Wanita Syari', price: 'Rp300.000', image: assetUrl('abaya-hitam.png') },
+  { id: 7, name: 'Gamis Executive', price: 'Rp350.000', image: assetUrl('gamis-p.png') },
+  { id: 8, name: 'Hijab Trendy', price: 'Rp240.000', image: assetUrl('hijab.png') },
 ]);
 
 const filteredProducts = computed(() => {

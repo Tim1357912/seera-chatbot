@@ -158,20 +158,21 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { assetUrl } from '../utils/assets'
 
 const showFilter = ref(false)
 const price = ref(1000000)
 const availability = ref([])
 
 const products = ref([
-  { id: 1, name: 'Koko Pria Premium', price: 'Rp250.000', discount: 'New In', image: '/koko-abu.png' },
-  { id: 2, name: 'Koko Pria Elegant', price: 'Rp280.000', discount: 'New In', image: '/koko-putih.png' },
-  { id: 3, name: 'Koko Pria Modern', price: 'Rp290.000', discount: 'New In', image: '/koko-hijau.png' },
-  { id: 4, name: 'Koko Pria Classic', price: 'Rp200.000', discount: 'New In', image: '/koko-biru.png' },
-  { id: 5, name: 'Koko Pria Casual', price: 'Rp220.000', image: '/koko-bt.png' },
-  { id: 6, name: 'Koko Pria Keren', price: 'Rp300.000', image: '/koko-t.png' },
-  { id: 7, name: 'Koko Pria Executive', price: 'Rp350.000', image: '/koko-w.png' },
-  { id: 8, name: 'Koko Pria Trendy', price: 'Rp240.000', image: '/koko-coklat.png' },
+  { id: 1, name: 'Koko Pria Premium', price: 'Rp250.000', discount: 'New In', image: assetUrl('koko-abu.png') },
+  { id: 2, name: 'Koko Pria Elegant', price: 'Rp280.000', discount: 'New In', image: assetUrl('koko-putih.png') },
+  { id: 3, name: 'Koko Pria Modern', price: 'Rp290.000', discount: 'New In', image: assetUrl('koko-hijau.png') },
+  { id: 4, name: 'Koko Pria Classic', price: 'Rp200.000', discount: 'New In', image: assetUrl('koko-biru.png') },
+  { id: 5, name: 'Koko Pria Casual', price: 'Rp220.000', image: assetUrl('koko-bt.png') },
+  { id: 6, name: 'Koko Pria Keren', price: 'Rp300.000', image: assetUrl('koko-t.png') },
+  { id: 7, name: 'Koko Pria Executive', price: 'Rp350.000', image: assetUrl('koko-w.png') },
+  { id: 8, name: 'Koko Pria Trendy', price: 'Rp240.000', image: assetUrl('koko-coklat.png') },
 ])
 
 const filteredProducts = computed(() => {

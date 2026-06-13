@@ -1,0 +1,445 @@
+name: Deploy AWS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - deploy
+    paths:
+      - "backend/**"
+      - "src/**"
+      - "public/**"
+      - "infra/terraform/**"
+      - "package.json"
+      - "package-lock.json"
+      - "Dockerfile.frontend"
+      - "amplify.yml"
+      - ".github/workflows/deploy-aws.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: seera-prod-deploy
+  cancel-in-progress: false
+
+env:
+  NO_CUSTOM_DOMAIN: ${{ vars.NO_CUSTOM_DOMAIN || secrets.NO_CUSTOM_DOMAIN }}
+  AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
+  AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET || secrets.TF_STATE_BUCKET }}
+  API_DOMAIN: ${{ vars.API_DOMAIN || secrets.API_DOMAIN }}
+  FRONTEND_DOMAIN: ${{ vars.FRONTEND_DOMAIN || secrets.FRONTEND_DOMAIN }}
+  ACM_CERTIFICATE_ARN: ${{ vars.ACM_CERTIFICATE_ARN || secrets.ACM_CERTIFICATE_ARN }}
+  ASSETS_DOMAIN: ${{ vars.ASSETS_DOMAIN || secrets.ASSETS_DOMAIN }}
+  HOSTED_ZONE_ID: ${{ vars.HOSTED_ZONE_ID || secrets.HOSTED_ZONE_ID }}
+  ENABLE_NAT_GATEWAY: ${{ vars.ENABLE_NAT_GATEWAY }}
+  ENABLE_VPC_ENDPOINTS: ${{ vars.ENABLE_VPC_ENDPOINTS }}
+  ENABLE_AMPLIFY: ${{ vars.ENABLE_AMPLIFY }}
+  ASSETS_ACM_CERTIFICATE_ARN: ${{ vars.ASSETS_ACM_CERTIFICATE_ARN || secrets.ASSETS_ACM_CERTIFICATE_ARN }}
+  AMPLIFY_DOMAIN_NAME: ${{ vars.AMPLIFY_DOMAIN_NAME || secrets.AMPLIFY_DOMAIN_NAME }}
+  AMPLIFY_SUBDOMAIN_PREFIX: ${{ vars.AMPLIFY_SUBDOMAIN_PREFIX }}
+
+jobs:
+  deploy:
+    name: Build and deploy to AWS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate repository and branch
+        run: |
+          set -euo pipefail
+          echo "Repository: ${GITHUB_REPOSITORY}"
+          echo "Branch: ${GITHUB_REF_NAME}"
+          test "${GITHUB_REF_NAME}" = "deploy"
+
+      - name: Validate required external inputs
+        run: |
+          set -euo pipefail
+          no_custom_domain="$(echo "${NO_CUSTOM_DOMAIN:-false}" | tr '[:upper:]' '[:lower:]')"
+          if [ "$no_custom_domain" = "1" ] || [ "$no_custom_domain" = "yes" ]; then
+            no_custom_domain="true"
+          fi
+          if [ "$no_custom_domain" != "true" ]; then
+            no_custom_domain="false"
+          fi
+          echo "NO_CUSTOM_DOMAIN_NORMALIZED=${no_custom_domain}" >> "$GITHUB_ENV"
+
+          missing=()
+          required=(AWS_REGION AWS_ROLE_ARN TF_STATE_BUCKET)
+          if [ "$no_custom_domain" != "true" ]; then
+            required+=(API_DOMAIN FRONTEND_DOMAIN ACM_CERTIFICATE_ARN ASSETS_DOMAIN)
+          fi
+
+          for name in "${required[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            {
+              echo "Missing required production deployment input(s): ${missing[*]}"
+              echo
+              echo "Why these are required:"
+              echo "- AWS_REGION: region for ECS/RDS/ECR/ALB, for example ap-southeast-1."
+              echo "- AWS_ROLE_ARN: GitHub OIDC role ARN; static AWS access keys are not allowed."
+              echo "- TF_STATE_BUCKET: encrypted S3 bucket for remote Terraform state."
+              if [ "$no_custom_domain" != "true" ]; then
+                echo "- API_DOMAIN: HTTPS backend domain, for example api.example.com."
+                echo "- FRONTEND_DOMAIN: HTTPS Amplify frontend domain, for example app.example.com."
+                echo "- ACM_CERTIFICATE_ARN: regional ACM certificate ARN for the ALB HTTPS listener."
+                echo "- ASSETS_DOMAIN: HTTPS object-storage asset domain or CloudFront domain."
+              else
+                echo "- NO_CUSTOM_DOMAIN=true: API, frontend, assets, and certificate domains are derived from AWS default domains."
+              fi
+              echo
+              echo "Set non-secret values in GitHub Actions Variables and AWS_ROLE_ARN in GitHub Actions Secrets."
+            } >&2
+            exit 1
+          fi
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Run backend tests
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pytest -q
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Build frontend
+        run: |
+          set -euo pipefail
+          if [ "${NO_CUSTOM_DOMAIN_NORMALIZED}" = "true" ]; then
+            export VITE_API_BASE_URL="https://placeholder.invalid"
+            export VITE_ASSET_BASE_URL="https://placeholder.invalid"
+          else
+            export VITE_API_BASE_URL="https://${API_DOMAIN}"
+            export VITE_ASSET_BASE_URL="https://${ASSETS_DOMAIN}"
+          fi
+          npm ci
+          npm run build
+
+      - name: Export Terraform variables
+        run: |
+          set -euo pipefail
+          {
+            echo "TF_VAR_project_name=seera"
+            echo "TF_VAR_environment=prod"
+            echo "TF_VAR_no_custom_domain=${NO_CUSTOM_DOMAIN_NORMALIZED}"
+            echo "TF_VAR_aws_region=${AWS_REGION}"
+            echo "TF_VAR_github_repository=${GITHUB_REPOSITORY}"
+            echo "TF_VAR_github_branch=${GITHUB_REF_NAME}"
+            echo "TF_VAR_api_domain=${API_DOMAIN:-}"
+            echo "TF_VAR_frontend_domain=${FRONTEND_DOMAIN:-}"
+            echo "TF_VAR_assets_domain=${ASSETS_DOMAIN:-}"
+            echo "TF_VAR_acm_certificate_arn=${ACM_CERTIFICATE_ARN:-}"
+            echo "TF_VAR_assets_acm_certificate_arn=${ASSETS_ACM_CERTIFICATE_ARN:-}"
+            echo "TF_VAR_hosted_zone_id=${HOSTED_ZONE_ID:-}"
+            echo "TF_VAR_enable_nat_gateway=${ENABLE_NAT_GATEWAY:-true}"
+            echo "TF_VAR_enable_vpc_endpoints=${ENABLE_VPC_ENDPOINTS:-false}"
+            echo "TF_VAR_enable_amplify=${ENABLE_AMPLIFY:-true}"
+            echo "TF_VAR_amplify_domain_name=${AMPLIFY_DOMAIN_NAME:-}"
+            echo "TF_VAR_amplify_subdomain_prefix=${AMPLIFY_SUBDOMAIN_PREFIX:-}"
+          } >> "$GITHUB_ENV"
+
+      - name: Terraform init
+        working-directory: infra/terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=seera/prod/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+
+      - name: Terraform fmt check
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        working-directory: infra/terraform
+        run: terraform validate
+
+      - name: Terraform apply base infrastructure
+        working-directory: infra/terraform
+        env:
+          TF_VAR_backend_image_uri: ""
+          TF_VAR_amplify_github_token: ${{ secrets.AMPLIFY_GITHUB_TOKEN }}
+        run: terraform apply -auto-approve
+
+      - name: Capture base Terraform outputs
+        working-directory: infra/terraform
+        run: |
+          set -euo pipefail
+          ecr_repository_url="$(terraform output -raw ecr_repository_url)"
+          ecs_cluster_name="$(terraform output -raw ecs_cluster_name)"
+          ecs_service_name="$(terraform output -raw ecs_service_name)"
+          backend_task_family="$(terraform output -raw backend_task_family)"
+          target_group_arn="$(terraform output -raw backend_target_group_arn)"
+          asset_bucket="$(terraform output -raw s3_assets_bucket_name)"
+          assets_base_url="$(terraform output -raw assets_base_url)"
+          backend_cloudfront_domain_name="$(terraform output -raw backend_cloudfront_domain_name)"
+          assets_cloudfront_domain_name="$(terraform output -raw assets_cloudfront_domain_name)"
+          amplify_default_domain="$(terraform output -raw amplify_default_domain)"
+          log_group_name="$(terraform output -raw backend_log_group_name)"
+          private_subnet_ids_json="$(terraform output -json private_subnet_ids | jq -c '.')"
+          ecs_security_group_id="$(terraform output -raw ecs_security_group_id)"
+          amplify_app_id="$(terraform output -raw amplify_app_id)"
+
+          if [ "${NO_CUSTOM_DOMAIN_NORMALIZED}" = "true" ]; then
+            test -n "$backend_cloudfront_domain_name"
+            test -n "$assets_cloudfront_domain_name"
+            test -n "$amplify_default_domain"
+            vite_api_base_url="https://${backend_cloudfront_domain_name}"
+            vite_asset_base_url="https://${assets_cloudfront_domain_name}"
+            asset_base_url="https://${assets_cloudfront_domain_name}"
+            cors_origins="https://${amplify_default_domain}"
+            backend_public_url="$vite_api_base_url"
+            frontend_public_url="$cors_origins"
+          else
+            vite_api_base_url="https://${API_DOMAIN}"
+            vite_asset_base_url="$assets_base_url"
+            asset_base_url="$assets_base_url"
+            cors_origins="https://${FRONTEND_DOMAIN}"
+            backend_public_url="$vite_api_base_url"
+            frontend_public_url="$cors_origins"
+          fi
+
+          {
+            echo "ECR_REPOSITORY_URL=${ecr_repository_url}"
+            echo "ECS_CLUSTER_NAME=${ecs_cluster_name}"
+            echo "ECS_SERVICE_NAME=${ecs_service_name}"
+            echo "BACKEND_TASK_FAMILY=${backend_task_family}"
+            echo "TARGET_GROUP_ARN=${target_group_arn}"
+            echo "ASSET_BUCKET=${asset_bucket}"
+            echo "ASSETS_BASE_URL=${asset_base_url}"
+            echo "BACKEND_CLOUDFRONT_DOMAIN_NAME=${backend_cloudfront_domain_name}"
+            echo "ASSETS_CLOUDFRONT_DOMAIN_NAME=${assets_cloudfront_domain_name}"
+            echo "AMPLIFY_DEFAULT_DOMAIN=${amplify_default_domain}"
+            echo "LOG_GROUP_NAME=${log_group_name}"
+            echo "PRIVATE_SUBNET_IDS_JSON=${private_subnet_ids_json}"
+            echo "ECS_SECURITY_GROUP_ID=${ecs_security_group_id}"
+            echo "AMPLIFY_APP_ID=${amplify_app_id}"
+            echo "VITE_API_BASE_URL=${vite_api_base_url}"
+            echo "VITE_ASSET_BASE_URL=${vite_asset_base_url}"
+            echo "ASSET_BASE_URL=${asset_base_url}"
+            echo "CORS_ORIGINS=${cors_origins}"
+            echo "TF_VAR_api_base_url_override=${vite_api_base_url}"
+            echo "TF_VAR_assets_base_url_override=${asset_base_url}"
+            echo "TF_VAR_frontend_origin_override=${cors_origins}"
+            echo "BACKEND_PUBLIC_URL=${backend_public_url}"
+            echo "FRONTEND_PUBLIC_URL=${frontend_public_url}"
+          } >> "$GITHUB_ENV"
+
+          echo "Runtime URL wiring:"
+          echo "- VITE_API_BASE_URL=${vite_api_base_url}"
+          echo "- VITE_ASSET_BASE_URL=${vite_asset_base_url}"
+          echo "- ASSET_BASE_URL=${asset_base_url}"
+          echo "- CORS_ORIGINS=${cors_origins}"
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend image
+        run: |
+          set -euo pipefail
+          IMAGE_URI="${ECR_REPOSITORY_URL}:${GITHUB_SHA}"
+          docker build -t "$IMAGE_URI" -t "${ECR_REPOSITORY_URL}:latest" backend
+          docker push "$IMAGE_URI"
+          docker push "${ECR_REPOSITORY_URL}:latest"
+          echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
+
+      - name: Terraform apply task definition
+        working-directory: infra/terraform
+        env:
+          TF_VAR_backend_image_uri: ${{ env.IMAGE_URI }}
+          TF_VAR_amplify_github_token: ${{ secrets.AMPLIFY_GITHUB_TOKEN }}
+        run: terraform apply -auto-approve
+
+      - name: Capture task definition output
+        working-directory: infra/terraform
+        run: echo "TASK_DEFINITION_ARN=$(terraform output -raw backend_task_definition_arn)" >> "$GITHUB_ENV"
+
+      - name: Sync static assets to S3
+        run: |
+          set -euo pipefail
+          aws s3 sync public "s3://${ASSET_BUCKET}/" \
+            --exclude "*" \
+            --include "*.png" \
+            --include "*.svg" \
+            --cache-control "public,max-age=31536000,immutable"
+
+      - name: Run migration and seed one-off tasks
+        run: |
+          set -euo pipefail
+
+          run_one_off() {
+            local name="$1"
+            local command_json="$2"
+            local overrides_file="${RUNNER_TEMP}/${name}-overrides.json"
+            local network_config
+            local task_arn
+            local exit_code
+
+            jq -n --argjson command "$command_json" \
+              '{containerOverrides:[{name:"backend",command:$command}]}' > "$overrides_file"
+
+            network_config=$(jq -n \
+              --argjson subnets "$PRIVATE_SUBNET_IDS_JSON" \
+              --arg sg "$ECS_SECURITY_GROUP_ID" \
+              '{awsvpcConfiguration:{subnets:$subnets,securityGroups:[$sg],assignPublicIp:"DISABLED"}}')
+
+            task_arn=$(aws ecs run-task \
+              --cluster "$ECS_CLUSTER_NAME" \
+              --launch-type FARGATE \
+              --task-definition "$TASK_DEFINITION_ARN" \
+              --network-configuration "$network_config" \
+              --overrides "file://${overrides_file}" \
+              --query "tasks[0].taskArn" \
+              --output text)
+
+            if [ -z "$task_arn" ] || [ "$task_arn" = "None" ]; then
+              echo "Failed to start ${name} task" >&2
+              exit 1
+            fi
+
+            aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER_NAME" --tasks "$task_arn"
+            exit_code=$(aws ecs describe-tasks \
+              --cluster "$ECS_CLUSTER_NAME" \
+              --tasks "$task_arn" \
+              --query "tasks[0].containers[?name=='backend'].exitCode | [0]" \
+              --output text)
+
+            if [ "$exit_code" != "0" ]; then
+              echo "${name} task failed with exit code ${exit_code}" >&2
+              aws logs tail "$LOG_GROUP_NAME" --since 20m || true
+              exit 1
+            fi
+          }
+
+          run_one_off migration '["alembic","upgrade","head"]'
+          run_one_off seed '["python","-m","app.seed.run_seed"]'
+
+      - name: Update ECS service after migration and seed
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER_NAME" \
+            --service "$ECS_SERVICE_NAME" \
+            --task-definition "$TASK_DEFINITION_ARN" \
+            --desired-count 1 \
+            --force-new-deployment
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER_NAME" --services "$ECS_SERVICE_NAME"
+
+      - name: Verify ALB target health
+        run: |
+          set -euo pipefail
+          states=$(aws elbv2 describe-target-health \
+            --target-group-arn "$TARGET_GROUP_ARN" \
+            --query "TargetHealthDescriptions[].TargetHealth.State" \
+            --output text)
+          echo "Target states: ${states}"
+          grep -qw "healthy" <<< "$states"
+
+      - name: Verify backend HTTPS health
+        run: curl -fsS "${BACKEND_PUBLIC_URL}/health"
+
+      - name: Trigger Amplify deployment
+        if: env.AMPLIFY_APP_ID != ''
+        run: |
+          set -euo pipefail
+          JOB_ID=$(aws amplify start-job \
+            --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$GITHUB_REF_NAME" \
+            --job-type RELEASE \
+            --query "jobSummary.jobId" \
+            --output text)
+
+          for attempt in {1..60}; do
+            STATUS=$(aws amplify get-job \
+              --app-id "$AMPLIFY_APP_ID" \
+              --branch-name "$GITHUB_REF_NAME" \
+              --job-id "$JOB_ID" \
+              --query "job.summary.status" \
+              --output text)
+            echo "Amplify job ${JOB_ID}: ${STATUS}"
+            case "$STATUS" in
+              SUCCEED) exit 0 ;;
+              FAILED|CANCELLED) exit 1 ;;
+            esac
+            sleep 20
+          done
+
+          echo "Amplify deployment timed out" >&2
+          exit 1
+
+      - name: Refresh backend CORS from Amplify default domain
+        if: env.NO_CUSTOM_DOMAIN_NORMALIZED == 'true'
+        working-directory: infra/terraform
+        env:
+          TF_VAR_backend_image_uri: ${{ env.IMAGE_URI }}
+          TF_VAR_amplify_github_token: ${{ secrets.AMPLIFY_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          terraform apply -auto-approve
+          TASK_DEFINITION_ARN="$(terraform output -raw backend_task_definition_arn)"
+          echo "TASK_DEFINITION_ARN=${TASK_DEFINITION_ARN}" >> "$GITHUB_ENV"
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER_NAME" \
+            --service "$ECS_SERVICE_NAME" \
+            --task-definition "$TASK_DEFINITION_ARN" \
+            --desired-count 1 \
+            --force-new-deployment
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER_NAME" --services "$ECS_SERVICE_NAME"
+
+      - name: Verify backend HTTPS after CORS refresh
+        if: env.NO_CUSTOM_DOMAIN_NORMALIZED == 'true'
+        run: curl -fsS "${BACKEND_PUBLIC_URL}/health"
+
+      - name: Verify frontend HTTPS
+        run: curl -fsSL "${FRONTEND_PUBLIC_URL}" > /dev/null
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "## Seera AWS deployment"
+            echo
+            echo "- Image: ${IMAGE_URI}"
+            echo "- ECS cluster: ${ECS_CLUSTER_NAME}"
+            echo "- ECS service: ${ECS_SERVICE_NAME}"
+            echo "- Task definition: ${TASK_DEFINITION_ARN}"
+            echo "- Backend: ${BACKEND_PUBLIC_URL}/health"
+            echo "- Frontend: ${FRONTEND_PUBLIC_URL}"
+            echo "- Assets: ${ASSETS_BASE_URL}"
+            echo "- Backend CloudFront: ${BACKEND_CLOUDFRONT_DOMAIN_NAME:-n/a}"
+            echo "- Assets CloudFront: ${ASSETS_CLOUDFRONT_DOMAIN_NAME}"
+            echo "- Amplify default domain: ${AMPLIFY_DEFAULT_DOMAIN}"
+            echo "- Asset bucket: ${ASSET_BUCKET}"
+          } >> "$GITHUB_STEP_SUMMARY"

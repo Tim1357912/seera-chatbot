@@ -1,0 +1,43 @@
+project_name  = "seera"
+environment   = "prod"
+aws_region    = "ap-southeast-1"
+no_custom_domain = false
+
+github_repository = "Tim1357912/seera-chatbot"
+github_branch     = "deploy"
+
+api_domain          = "api.example.com"
+frontend_domain     = "app.example.com"
+assets_domain       = "assets.example.com"
+acm_certificate_arn = "arn:aws:acm:ap-southeast-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
+
+# Optional. Required only when CloudFront should serve assets.example.com directly.
+# CloudFront certificates must be in us-east-1.
+assets_acm_certificate_arn = ""
+
+# Optional Route 53 hosted zone for api_domain.
+hosted_zone_id = ""
+
+# Set by deploy-aws.yml after Terraform creates default AWS domains.
+# Leave empty for manual Terraform runs unless you need an explicit override.
+api_base_url_override    = ""
+frontend_origin_override = ""
+assets_base_url_override = ""
+
+enable_nat_gateway   = true
+enable_vpc_endpoints = false
+
+backend_image_uri = ""
+
+db_name                = "seera_chatbot"
+db_username            = "seera_admin"
+db_instance_class      = "db.t4g.micro"
+db_deletion_protection = true
+
+assets_bucket_name = ""
+
+enable_amplify                    = true
+enable_amplify_domain_association = false
+amplify_domain_name               = "example.com"
+amplify_subdomain_prefix          = "app"
+amplify_github_token              = ""

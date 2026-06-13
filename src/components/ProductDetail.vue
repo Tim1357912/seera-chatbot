@@ -190,6 +190,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { assetUrl } from '../utils/assets'
 
 const route = useRoute()
 
@@ -216,10 +217,10 @@ const selectedSize = ref('M')
 const qty = ref(1)
 
 const recommended = ref([
-  { id: 101, name: 'Koko Pria Casual', price: 'Rp220.000', image: '/koko-hijau.png'},
-  { id: 102, name: 'Abaya Wanita Syari', price: 'Rp300.000', image: '/abaya-hitam.png' },
-  { id: 103, name: 'Gamis Executive', price: 'Rp350.000', image: '/gamis-p.png'},
-  { id: 104, name: 'Hijab Trendy', price: 'Rp240.000', image: '/hijab.png'},
+  { id: 101, name: 'Koko Pria Casual', price: 'Rp220.000', image: assetUrl('koko-hijau.png')},
+  { id: 102, name: 'Abaya Wanita Syari', price: 'Rp300.000', image: assetUrl('abaya-hitam.png') },
+  { id: 103, name: 'Gamis Executive', price: 'Rp350.000', image: assetUrl('gamis-p.png')},
+  { id: 104, name: 'Hijab Trendy', price: 'Rp240.000', image: assetUrl('hijab.png')},
 ])
 
 // Simulate fetch product by ID
@@ -228,7 +229,7 @@ onMounted(() => {
   product.value.id = id
   product.value.name = 'Koko Pria'
   product.value.price = 'Rp200.000'
-  product.value.image = '/koko-abu.png'
+  product.value.image = assetUrl('koko-abu.png')
   product.value.color = 'Abu'
 })
 </script>

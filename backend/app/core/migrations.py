@@ -3,6 +3,8 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import inspect
 
 from app.core.database import engine
@@ -54,3 +56,20 @@ def ensure_schema_current() -> None:
 
     logger.info("Applying database migrations...")
     command.upgrade(config, HEAD_REVISION)
+
+
+def assert_schema_at_head() -> None:
+    """Fail fast when production seed runs before Alembic migrations."""
+    config = _alembic_config()
+    script = ScriptDirectory.from_config(config)
+    expected_heads = set(script.get_heads())
+
+    with engine.connect() as connection:
+        context = MigrationContext.configure(connection)
+        current_heads = set(context.get_current_heads())
+
+    if current_heads != expected_heads:
+        raise RuntimeError(
+            "Database schema is not at Alembic head. "
+            "Run `alembic upgrade head` before `python -m app.seed.run_seed`."
+        )

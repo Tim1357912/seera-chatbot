@@ -1,5 +1,7 @@
-"""Seed catalog products and colors using local public clothing assets."""
+"""Seed catalog products and colors using object-storage asset URLs in production."""
 from sqlalchemy.orm import Session as DBSession
+
+from app.core.config import settings
 from app.models.category import Category
 from app.models.color import Color
 from app.models.product import Product
@@ -56,7 +58,7 @@ PRODUCTS_SEED = [
         "target_gender": "MALE",
         "is_active": True,
         "colors": [("Off White", "DOMINANT", 100.0)],
-        "image_url": "/koko-putih.png",
+        "image_key": "koko-putih.png",
         "description": "Koko putih clean look dari asset public/koko-putih.png.",
     },
     {
@@ -70,7 +72,7 @@ PRODUCTS_SEED = [
         "target_gender": "MALE",
         "is_active": True,
         "colors": [("Ash Gray", "DOMINANT", 100.0)],
-        "image_url": "/koko-abu.png",
+        "image_key": "koko-abu.png",
         "description": "Koko abu netral yang sinkron dengan public/koko-abu.png.",
     },
     {
@@ -84,7 +86,7 @@ PRODUCTS_SEED = [
         "target_gender": "MALE",
         "is_active": True,
         "colors": [("Slate Blue", "DOMINANT", 100.0)],
-        "image_url": "/koko-biru.png",
+        "image_key": "koko-biru.png",
         "description": "Koko biru modern dari asset public/koko-biru.png.",
     },
     {
@@ -98,7 +100,7 @@ PRODUCTS_SEED = [
         "target_gender": "MALE",
         "is_active": True,
         "colors": [("Sage Green", "DOMINANT", 100.0)],
-        "image_url": "/koko-hijau.png",
+        "image_key": "koko-hijau.png",
         "description": "Koko hijau bernuansa sage dari asset public/koko-hijau.png.",
     },
     {
@@ -112,7 +114,7 @@ PRODUCTS_SEED = [
         "target_gender": "MALE",
         "is_active": True,
         "colors": [("Chocolate Brown", "DOMINANT", 100.0)],
-        "image_url": "/koko-coklat.png",
+        "image_key": "koko-coklat.png",
         "description": "Koko coklat warm dari asset public/koko-coklat.png.",
     },
     {
@@ -130,7 +132,7 @@ PRODUCTS_SEED = [
             ("Chocolate Brown", "SECONDARY", 25.0),
             ("Camel", "ACCENT", 15.0),
         ],
-        "image_url": "/koko-bt.png",
+        "image_key": "koko-bt.png",
         "description": "Koko batik taupe dengan aksen coklat dari asset public/koko-bt.png.",
     },
     {
@@ -147,7 +149,7 @@ PRODUCTS_SEED = [
             ("Deep Teal", "DOMINANT", 80.0),
             ("Charcoal", "SECONDARY", 20.0),
         ],
-        "image_url": "/koko-t.png",
+        "image_key": "koko-t.png",
         "description": "Koko premium bernuansa teal dari asset public/koko-t.png.",
     },
     {
@@ -161,7 +163,7 @@ PRODUCTS_SEED = [
         "target_gender": "FEMALE",
         "is_active": True,
         "colors": [("Black", "DOMINANT", 100.0)],
-        "image_url": "/abaya-hitam.png",
+        "image_key": "abaya-hitam.png",
         "description": "Abaya hitam premium dari asset public/abaya-hitam.png.",
     },
     {
@@ -178,7 +180,7 @@ PRODUCTS_SEED = [
             ("Off White", "DOMINANT", 85.0),
             ("Charcoal", "SECONDARY", 15.0),
         ],
-        "image_url": "/koko-w.png",
+        "image_key": "koko-w.png",
         "description": "Koko putih dengan detail gelap dari asset public/koko-w.png.",
     },
     {
@@ -192,7 +194,7 @@ PRODUCTS_SEED = [
         "target_gender": "MALE",
         "is_active": True,
         "colors": [("Navy Blue", "DOMINANT", 100.0)],
-        "image_url": "/koko.png",
+        "image_key": "koko.png",
         "description": "Koko navy basic dari asset public/koko.png.",
     },
     {
@@ -209,7 +211,7 @@ PRODUCTS_SEED = [
             ("Dusty Pink", "DOMINANT", 75.0),
             ("Cream", "SECONDARY", 25.0),
         ],
-        "image_url": "/gamis-pink.png",
+        "image_key": "gamis-pink.png",
         "description": "Gamis pink elegan dari asset public/gamis-pink.png.",
     },
     {
@@ -226,7 +228,7 @@ PRODUCTS_SEED = [
             ("Mocha Brown", "DOMINANT", 70.0),
             ("Camel", "SECONDARY", 30.0),
         ],
-        "image_url": "/gamis-coklat.png",
+        "image_key": "gamis-coklat.png",
         "description": "Gamis coklat daily dari asset public/gamis-coklat.png.",
     },
     {
@@ -243,7 +245,7 @@ PRODUCTS_SEED = [
             ("Peach", "DOMINANT", 70.0),
             ("Cream", "SECONDARY", 30.0),
         ],
-        "image_url": "/gamis-p.png",
+        "image_key": "gamis-p.png",
         "description": "Gamis executive bernuansa peach dari asset public/gamis-p.png.",
     },
     {
@@ -260,7 +262,7 @@ PRODUCTS_SEED = [
             ("Cream", "DOMINANT", 70.0),
             ("Dusty Pink", "SECONDARY", 30.0),
         ],
-        "image_url": "/gamis.png",
+        "image_key": "gamis.png",
         "description": "Gamis cream flow dari asset public/gamis.png.",
     },
     {
@@ -277,7 +279,7 @@ PRODUCTS_SEED = [
             ("Charcoal", "DOMINANT", 65.0),
             ("Off White", "SECONDARY", 35.0),
         ],
-        "image_url": "/abaya.png",
+        "image_key": "abaya.png",
         "description": "Abaya neutral dari asset public/abaya.png.",
     },
     {
@@ -294,10 +296,17 @@ PRODUCTS_SEED = [
             ("Lavender", "DOMINANT", 65.0),
             ("Soft Pink", "SECONDARY", 35.0),
         ],
-        "image_url": "/hijab.png",
+        "image_key": "hijab.png",
         "description": "Hijab soft tone dari asset public/hijab.png.",
     },
 ]
+
+
+def product_asset_url(entry: dict) -> str | None:
+    image_key = entry.get("image_key")
+    if not image_key:
+        return None
+    return settings.asset_url(image_key)
 
 def seed_colors(db: DBSession) -> dict[str, int]:
     name_to_id: dict[str, int] = {}
@@ -352,6 +361,7 @@ def seed_products(db: DBSession) -> None:
     category_ids = seed_categories(db)
 
     for entry in PRODUCTS_SEED:
+        image_url = product_asset_url(entry)
         product = (
             db.query(Product)
             .filter(Product.external_catalog_id == entry["external_catalog_id"])
@@ -368,7 +378,7 @@ def seed_products(db: DBSession) -> None:
                 category_id=category_ids.get(entry["category"]),
                 target_gender=entry.get("target_gender", "UNISEX"),
                 is_active=entry["is_active"],
-                image_url=entry.get("image_url"),
+                image_url=image_url,
                 description=entry.get("description"),
             )
             db.add(product)
@@ -382,23 +392,30 @@ def seed_products(db: DBSession) -> None:
             product.category_id = category_ids.get(entry["category"])
             product.target_gender = entry.get("target_gender", "UNISEX")
             product.is_active = entry["is_active"]
-            product.image_url = entry.get("image_url")
+            product.image_url = image_url
             product.description = entry.get("description")
-            # purge existing product_colors to re-seed
-            for pc in list(product.product_colors):
-                db.delete(pc)
-            db.flush()
 
         for idx, (color_name, role, pct) in enumerate(entry["colors"], start=1):
-            db.add(
-                ProductColor(
-                    product_id=product.id,
-                    color_id=color_ids[color_name],
-                    color_role=role,
-                    color_rank=idx,
-                    color_percentage=pct,
-                )
+            product_color = (
+                db.query(ProductColor)
+                .filter(ProductColor.product_id == product.id, ProductColor.color_rank == idx)
+                .first()
             )
+            if not product_color:
+                product_color = (
+                    db.query(ProductColor)
+                    .filter(ProductColor.product_id == product.id, ProductColor.color_role == role)
+                    .first()
+                )
+
+            if not product_color:
+                product_color = ProductColor(product_id=product.id)
+                db.add(product_color)
+
+            product_color.color_id = color_ids[color_name]
+            product_color.color_role = role
+            product_color.color_rank = idx
+            product_color.color_percentage = pct
     db.commit()
 
 
