@@ -386,11 +386,10 @@ jobs:
             --query "Role.RoleName" \
             --output text 2>/dev/null || true)"
 
-          task_policy_arn="$(aws iam list-policies \
-            --scope Local \
-            --query "Policies[?PolicyName=='${name_prefix}-ecs-task-assets'].Arn | [0]" \
-            --output text 2>/dev/null || true)"
-          import_if_missing "aws_iam_policy.ecs_task_assets" "$task_policy_arn"
+          task_policy_arn="arn:aws:iam::${account_id}:policy/${name_prefix}-ecs-task-assets"
+          if aws iam get-policy --policy-arn "$task_policy_arn" >/dev/null 2>&1; then
+            import_if_missing "aws_iam_policy.ecs_task_assets" "$task_policy_arn"
+          fi
 
           import_if_missing "aws_db_subnet_group.postgres" "$(aws rds describe-db-subnet-groups \
             --db-subnet-group-name "${name_prefix}-db-subnets" \
