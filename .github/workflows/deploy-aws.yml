@@ -187,6 +187,139 @@ jobs:
         working-directory: infra/terraform
         run: terraform validate
 
+      - name: Import existing Terraform resources from partial applies
+        working-directory: infra/terraform
+        env:
+          TF_VAR_backend_image_uri: ""
+          TF_VAR_amplify_github_token: ${{ secrets.AMPLIFY_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          name_prefix="${TF_VAR_project_name}-${TF_VAR_environment}"
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          asset_bucket="${name_prefix}-assets-${account_id}"
+
+          is_present_id() {
+            local value="${1:-}"
+            [ -n "$value" ] && [ "$value" != "None" ] && [ "$value" != "null" ]
+          }
+
+          import_if_missing() {
+            local address="$1"
+            local import_id="${2:-}"
+
+            if ! is_present_id "$import_id"; then
+              echo "Skip import ${address}: resource not found"
+              return 0
+            fi
+
+            if terraform state show "$address" >/dev/null 2>&1; then
+              echo "State already has ${address}"
+              return 0
+            fi
+
+            echo "Importing ${address} <- ${import_id}"
+            terraform import -input=false "$address" "$import_id"
+          }
+
+          alb_arn="$(aws elbv2 describe-load-balancers \
+            --names "${name_prefix}-api-alb" \
+            --query "LoadBalancers[0].LoadBalancerArn" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_lb.api" "$alb_arn"
+
+          target_group_arn="$(aws elbv2 describe-target-groups \
+            --names "${name_prefix}-backend-tg" \
+            --query "TargetGroups[0].TargetGroupArn" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_lb_target_group.backend" "$target_group_arn"
+
+          if is_present_id "$alb_arn"; then
+            listener_80_arn="$(aws elbv2 describe-listeners \
+              --load-balancer-arn "$alb_arn" \
+              --query "Listeners[?Port==\`80\`].ListenerArn | [0]" \
+              --output text 2>/dev/null || true)"
+            if [ "${NO_CUSTOM_DOMAIN_NORMALIZED}" = "true" ]; then
+              import_if_missing "aws_lb_listener.http_forward[0]" "$listener_80_arn"
+            else
+              import_if_missing "aws_lb_listener.http_redirect[0]" "$listener_80_arn"
+              listener_443_arn="$(aws elbv2 describe-listeners \
+                --load-balancer-arn "$alb_arn" \
+                --query "Listeners[?Port==\`443\`].ListenerArn | [0]" \
+                --output text 2>/dev/null || true)"
+              import_if_missing "aws_lb_listener.https[0]" "$listener_443_arn"
+            fi
+          fi
+
+          oac_id="$(aws cloudfront list-origin-access-controls \
+            --query "OriginAccessControlList.Items[?Name=='${name_prefix}-assets-oac'].Id | [0]" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_cloudfront_origin_access_control.assets" "$oac_id"
+
+          log_group_name="/ecs/${name_prefix}-backend"
+          if aws logs describe-log-groups \
+            --log-group-name-prefix "$log_group_name" \
+            --query "logGroups[?logGroupName=='${log_group_name}'].logGroupName | [0]" \
+            --output text >/tmp/seera-log-group.txt 2>/dev/null; then
+            import_if_missing "aws_cloudwatch_log_group.backend" "$(cat /tmp/seera-log-group.txt)"
+          fi
+
+          ecr_repo_name="$(aws ecr describe-repositories \
+            --repository-names "seera-backend" \
+            --query "repositories[0].repositoryName" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_ecr_repository.backend" "$ecr_repo_name"
+
+          import_if_missing "aws_iam_role.ecs_execution" "$(aws iam get-role \
+            --role-name "${name_prefix}-ecs-execution" \
+            --query "Role.RoleName" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_iam_role.ecs_task" "$(aws iam get-role \
+            --role-name "${name_prefix}-ecs-task" \
+            --query "Role.RoleName" \
+            --output text 2>/dev/null || true)"
+
+          task_policy_arn="$(aws iam list-policies \
+            --scope Local \
+            --query "Policies[?PolicyName=='${name_prefix}-ecs-task-assets'].Arn | [0]" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_iam_policy.ecs_task_assets" "$task_policy_arn"
+
+          import_if_missing "aws_db_subnet_group.postgres" "$(aws rds describe-db-subnet-groups \
+            --db-subnet-group-name "${name_prefix}-db-subnets" \
+            --query "DBSubnetGroups[0].DBSubnetGroupName" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_db_instance.postgres" "$(aws rds describe-db-instances \
+            --db-instance-identifier "${name_prefix}-postgres" \
+            --query "DBInstances[0].DBInstanceIdentifier" \
+            --output text 2>/dev/null || true)"
+
+          if aws s3api head-bucket --bucket "$asset_bucket" >/dev/null 2>&1; then
+            import_if_missing "aws_s3_bucket.assets" "$asset_bucket"
+            import_if_missing "aws_s3_bucket_versioning.assets" "$asset_bucket"
+            if aws s3api get-public-access-block --bucket "$asset_bucket" >/dev/null 2>&1; then
+              import_if_missing "aws_s3_bucket_public_access_block.assets" "$asset_bucket"
+            fi
+            if aws s3api get-bucket-ownership-controls --bucket "$asset_bucket" >/dev/null 2>&1; then
+              import_if_missing "aws_s3_bucket_ownership_controls.assets" "$asset_bucket"
+            fi
+            if aws s3api get-bucket-encryption --bucket "$asset_bucket" >/dev/null 2>&1; then
+              import_if_missing "aws_s3_bucket_server_side_encryption_configuration.assets" "$asset_bucket"
+            fi
+            if aws s3api get-bucket-lifecycle-configuration --bucket "$asset_bucket" >/dev/null 2>&1; then
+              import_if_missing "aws_s3_bucket_lifecycle_configuration.assets" "$asset_bucket"
+            fi
+            if aws s3api get-bucket-policy --bucket "$asset_bucket" >/dev/null 2>&1; then
+              import_if_missing "aws_s3_bucket_policy.assets" "$asset_bucket"
+            fi
+          fi
+
+          secret_arn="$(aws secretsmanager describe-secret \
+            --secret-id "${name_prefix}/database-url" \
+            --query "ARN" \
+            --output text 2>/dev/null || true)"
+          import_if_missing "aws_secretsmanager_secret.database_url" "$secret_arn"
+
       - name: Terraform apply base infrastructure
         working-directory: infra/terraform
         env:
