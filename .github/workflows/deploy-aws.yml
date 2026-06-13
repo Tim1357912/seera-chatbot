@@ -222,16 +222,119 @@ jobs:
             terraform import -input=false "$address" "$import_id"
           }
 
+          target_group_arn="$(aws elbv2 describe-target-groups \
+            --names "${name_prefix}-backend-tg" \
+            --query "TargetGroups[0].TargetGroupArn" \
+            --output text 2>/dev/null || true)"
+
+          if is_present_id "$target_group_arn"; then
+            target_group_vpc_id="$(aws elbv2 describe-target-groups \
+              --target-group-arns "$target_group_arn" \
+              --query "TargetGroups[0].VpcId" \
+              --output text 2>/dev/null || true)"
+          else
+            target_group_vpc_id="$(aws ec2 describe-vpcs \
+              --filters "Name=tag:Name,Values=${name_prefix}-vpc" \
+              --query "Vpcs[0].VpcId" \
+              --output text 2>/dev/null || true)"
+          fi
+
+          if is_present_id "$target_group_vpc_id"; then
+            import_if_missing "aws_vpc.main" "$target_group_vpc_id"
+
+            public_subnet_0="$(aws ec2 describe-subnets \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=cidr-block,Values=10.40.0.0/24" \
+              --query "Subnets[0].SubnetId" \
+              --output text 2>/dev/null || true)"
+            public_subnet_1="$(aws ec2 describe-subnets \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=cidr-block,Values=10.40.1.0/24" \
+              --query "Subnets[0].SubnetId" \
+              --output text 2>/dev/null || true)"
+            private_subnet_0="$(aws ec2 describe-subnets \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=cidr-block,Values=10.40.10.0/24" \
+              --query "Subnets[0].SubnetId" \
+              --output text 2>/dev/null || true)"
+            private_subnet_1="$(aws ec2 describe-subnets \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=cidr-block,Values=10.40.11.0/24" \
+              --query "Subnets[0].SubnetId" \
+              --output text 2>/dev/null || true)"
+
+            import_if_missing 'aws_subnet.public["0"]' "$public_subnet_0"
+            import_if_missing 'aws_subnet.public["1"]' "$public_subnet_1"
+            import_if_missing 'aws_subnet.private["0"]' "$private_subnet_0"
+            import_if_missing 'aws_subnet.private["1"]' "$private_subnet_1"
+
+            import_if_missing "aws_internet_gateway.main" "$(aws ec2 describe-internet-gateways \
+              --filters "Name=attachment.vpc-id,Values=${target_group_vpc_id}" "Name=tag:Name,Values=${name_prefix}-igw" \
+              --query "InternetGateways[0].InternetGatewayId" \
+              --output text 2>/dev/null || true)"
+
+            import_if_missing "aws_route_table.public" "$(aws ec2 describe-route-tables \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=tag:Name,Values=${name_prefix}-public-rt" \
+              --query "RouteTables[0].RouteTableId" \
+              --output text 2>/dev/null || true)"
+            import_if_missing "aws_route_table.private" "$(aws ec2 describe-route-tables \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=tag:Name,Values=${name_prefix}-private-rt" \
+              --query "RouteTables[0].RouteTableId" \
+              --output text 2>/dev/null || true)"
+
+            if is_present_id "$public_subnet_0"; then
+              import_if_missing 'aws_route_table_association.public["0"]' "$(aws ec2 describe-route-tables \
+                --filters "Name=association.subnet-id,Values=${public_subnet_0}" \
+                --query "RouteTables[0].Associations[?SubnetId=='${public_subnet_0}'].RouteTableAssociationId | [0]" \
+                --output text 2>/dev/null || true)"
+            fi
+            if is_present_id "$public_subnet_1"; then
+              import_if_missing 'aws_route_table_association.public["1"]' "$(aws ec2 describe-route-tables \
+                --filters "Name=association.subnet-id,Values=${public_subnet_1}" \
+                --query "RouteTables[0].Associations[?SubnetId=='${public_subnet_1}'].RouteTableAssociationId | [0]" \
+                --output text 2>/dev/null || true)"
+            fi
+            if is_present_id "$private_subnet_0"; then
+              import_if_missing 'aws_route_table_association.private["0"]' "$(aws ec2 describe-route-tables \
+                --filters "Name=association.subnet-id,Values=${private_subnet_0}" \
+                --query "RouteTables[0].Associations[?SubnetId=='${private_subnet_0}'].RouteTableAssociationId | [0]" \
+                --output text 2>/dev/null || true)"
+            fi
+            if is_present_id "$private_subnet_1"; then
+              import_if_missing 'aws_route_table_association.private["1"]' "$(aws ec2 describe-route-tables \
+                --filters "Name=association.subnet-id,Values=${private_subnet_1}" \
+                --query "RouteTables[0].Associations[?SubnetId=='${private_subnet_1}'].RouteTableAssociationId | [0]" \
+                --output text 2>/dev/null || true)"
+            fi
+
+            import_if_missing "aws_security_group.alb" "$(aws ec2 describe-security-groups \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=group-name,Values=${name_prefix}-alb-sg" \
+              --query "SecurityGroups[0].GroupId" \
+              --output text 2>/dev/null || true)"
+            import_if_missing "aws_security_group.ecs" "$(aws ec2 describe-security-groups \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=group-name,Values=${name_prefix}-ecs-sg" \
+              --query "SecurityGroups[0].GroupId" \
+              --output text 2>/dev/null || true)"
+            import_if_missing "aws_security_group.rds" "$(aws ec2 describe-security-groups \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=group-name,Values=${name_prefix}-rds-sg" \
+              --query "SecurityGroups[0].GroupId" \
+              --output text 2>/dev/null || true)"
+            import_if_missing "aws_security_group.vpc_endpoint" "$(aws ec2 describe-security-groups \
+              --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=group-name,Values=${name_prefix}-vpce-sg" \
+              --query "SecurityGroups[0].GroupId" \
+              --output text 2>/dev/null || true)"
+
+            import_if_missing "aws_eip.nat[0]" "$(aws ec2 describe-addresses \
+              --filters "Name=tag:Name,Values=${name_prefix}-nat-eip" \
+              --query "Addresses[0].AllocationId" \
+              --output text 2>/dev/null || true)"
+            import_if_missing "aws_nat_gateway.main[0]" "$(aws ec2 describe-nat-gateways \
+              --filter "Name=vpc-id,Values=${target_group_vpc_id}" "Name=tag:Name,Values=${name_prefix}-nat" \
+              --query "NatGateways[0].NatGatewayId" \
+              --output text 2>/dev/null || true)"
+          fi
+
           alb_arn="$(aws elbv2 describe-load-balancers \
             --names "${name_prefix}-api-alb" \
             --query "LoadBalancers[0].LoadBalancerArn" \
             --output text 2>/dev/null || true)"
           import_if_missing "aws_lb.api" "$alb_arn"
-
-          target_group_arn="$(aws elbv2 describe-target-groups \
-            --names "${name_prefix}-backend-tg" \
-            --query "TargetGroups[0].TargetGroupArn" \
-            --output text 2>/dev/null || true)"
           import_if_missing "aws_lb_target_group.backend" "$target_group_arn"
 
           if is_present_id "$alb_arn"; then
@@ -256,6 +359,15 @@ jobs:
             --output text 2>/dev/null || true)"
           import_if_missing "aws_cloudfront_origin_access_control.assets" "$oac_id"
 
+          import_if_missing "aws_cloudfront_distribution.assets" "$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='${name_prefix} static assets'].Id | [0]" \
+            --output text 2>/dev/null || true)"
+          if [ "${NO_CUSTOM_DOMAIN_NORMALIZED}" = "true" ]; then
+            import_if_missing "aws_cloudfront_distribution.backend[0]" "$(aws cloudfront list-distributions \
+              --query "DistributionList.Items[?Comment=='${name_prefix} backend API'].Id | [0]" \
+              --output text 2>/dev/null || true)"
+          fi
+
           log_group_name="/ecs/${name_prefix}-backend"
           if aws logs describe-log-groups \
             --log-group-name-prefix "$log_group_name" \
@@ -269,6 +381,10 @@ jobs:
             --query "repositories[0].repositoryName" \
             --output text 2>/dev/null || true)"
           import_if_missing "aws_ecr_repository.backend" "$ecr_repo_name"
+          import_if_missing "aws_ecs_cluster.main" "$(aws ecs describe-clusters \
+            --clusters "${name_prefix}-cluster" \
+            --query "clusters[0].clusterArn" \
+            --output text 2>/dev/null || true)"
 
           import_if_missing "aws_iam_role.ecs_execution" "$(aws iam get-role \
             --role-name "${name_prefix}-ecs-execution" \
