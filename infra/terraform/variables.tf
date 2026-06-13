@@ -171,8 +171,8 @@ variable "postgres_engine_version" {
 
   validation {
     condition = (
-      trimspace(coalesce(var.postgres_engine_version, "")) == "" ||
-      can(regex("^\\d+(\\.\\d+)?$", trimspace(coalesce(var.postgres_engine_version, ""))))
+      try(trimspace(var.postgres_engine_version), "") == "" ||
+      can(regex("^\\d+(\\.\\d+)?$", try(trimspace(var.postgres_engine_version), "")))
     )
     error_message = "postgres_engine_version must be null, empty, a major version like 16, or a supported minor version like 16.8."
   }
