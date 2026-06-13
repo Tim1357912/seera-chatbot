@@ -317,7 +317,7 @@ jobs:
               --output text 2>/dev/null || true)"
             import_if_missing "aws_nat_gateway.main[0]" "$(aws ec2 describe-nat-gateways \
               --filter "Name=vpc-id,Values=${target_group_vpc_id}" "Name=tag:Name,Values=${name_prefix}-nat" \
-              --query "NatGateways[0].NatGatewayId" \
+              --query "NatGateways[?State=='available'].NatGatewayId | [0]" \
               --output text 2>/dev/null || true)"
           fi
 
