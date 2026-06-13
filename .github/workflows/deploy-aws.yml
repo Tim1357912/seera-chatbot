@@ -269,38 +269,29 @@ jobs:
               --query "InternetGateways[0].InternetGatewayId" \
               --output text 2>/dev/null || true)"
 
-            import_if_missing "aws_route_table.public" "$(aws ec2 describe-route-tables \
+            public_route_table_id="$(aws ec2 describe-route-tables \
               --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=tag:Name,Values=${name_prefix}-public-rt" \
               --query "RouteTables[0].RouteTableId" \
               --output text 2>/dev/null || true)"
-            import_if_missing "aws_route_table.private" "$(aws ec2 describe-route-tables \
+            private_route_table_id="$(aws ec2 describe-route-tables \
               --filters "Name=vpc-id,Values=${target_group_vpc_id}" "Name=tag:Name,Values=${name_prefix}-private-rt" \
               --query "RouteTables[0].RouteTableId" \
               --output text 2>/dev/null || true)"
 
-            if is_present_id "$public_subnet_0"; then
-              import_if_missing 'aws_route_table_association.public["0"]' "$(aws ec2 describe-route-tables \
-                --filters "Name=association.subnet-id,Values=${public_subnet_0}" \
-                --query "RouteTables[0].Associations[?SubnetId=='${public_subnet_0}'].RouteTableAssociationId | [0]" \
-                --output text 2>/dev/null || true)"
+            import_if_missing "aws_route_table.public" "$public_route_table_id"
+            import_if_missing "aws_route_table.private" "$private_route_table_id"
+
+            if is_present_id "$public_subnet_0" && is_present_id "$public_route_table_id"; then
+              import_if_missing 'aws_route_table_association.public["0"]' "${public_subnet_0}/${public_route_table_id}"
             fi
-            if is_present_id "$public_subnet_1"; then
-              import_if_missing 'aws_route_table_association.public["1"]' "$(aws ec2 describe-route-tables \
-                --filters "Name=association.subnet-id,Values=${public_subnet_1}" \
-                --query "RouteTables[0].Associations[?SubnetId=='${public_subnet_1}'].RouteTableAssociationId | [0]" \
-                --output text 2>/dev/null || true)"
+            if is_present_id "$public_subnet_1" && is_present_id "$public_route_table_id"; then
+              import_if_missing 'aws_route_table_association.public["1"]' "${public_subnet_1}/${public_route_table_id}"
             fi
-            if is_present_id "$private_subnet_0"; then
-              import_if_missing 'aws_route_table_association.private["0"]' "$(aws ec2 describe-route-tables \
-                --filters "Name=association.subnet-id,Values=${private_subnet_0}" \
-                --query "RouteTables[0].Associations[?SubnetId=='${private_subnet_0}'].RouteTableAssociationId | [0]" \
-                --output text 2>/dev/null || true)"
+            if is_present_id "$private_subnet_0" && is_present_id "$private_route_table_id"; then
+              import_if_missing 'aws_route_table_association.private["0"]' "${private_subnet_0}/${private_route_table_id}"
             fi
-            if is_present_id "$private_subnet_1"; then
-              import_if_missing 'aws_route_table_association.private["1"]' "$(aws ec2 describe-route-tables \
-                --filters "Name=association.subnet-id,Values=${private_subnet_1}" \
-                --query "RouteTables[0].Associations[?SubnetId=='${private_subnet_1}'].RouteTableAssociationId | [0]" \
-                --output text 2>/dev/null || true)"
+            if is_present_id "$private_subnet_1" && is_present_id "$private_route_table_id"; then
+              import_if_missing 'aws_route_table_association.private["1"]' "${private_subnet_1}/${private_route_table_id}"
             fi
 
             import_if_missing "aws_security_group.alb" "$(aws ec2 describe-security-groups \
