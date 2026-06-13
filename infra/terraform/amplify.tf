@@ -2,8 +2,8 @@ resource "aws_amplify_app" "frontend" {
   count = var.enable_amplify ? 1 : 0
 
   name         = "${local.name_prefix}-frontend"
-  repository   = "https://github.com/${var.github_repository}"
-  access_token = var.amplify_github_token != "" ? var.amplify_github_token : null
+  repository   = trimspace(var.amplify_github_token) != "" ? "https://github.com/${var.github_repository}" : null
+  access_token = trimspace(var.amplify_github_token) != "" ? var.amplify_github_token : null
 
   platform = "WEB"
 
@@ -24,7 +24,7 @@ resource "aws_amplify_branch" "frontend" {
 
   app_id            = aws_amplify_app.frontend[0].id
   branch_name       = var.github_branch
-  enable_auto_build = true
+  enable_auto_build = trimspace(var.amplify_github_token) != ""
   framework         = "Vue"
   stage             = "PRODUCTION"
 

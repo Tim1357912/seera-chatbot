@@ -401,6 +401,22 @@ jobs:
             --query "DBInstances[0].DBInstanceIdentifier" \
             --output text 2>/dev/null || true)"
 
+          if [ "${TF_VAR_enable_amplify:-true}" = "true" ]; then
+            amplify_app_id="$(aws amplify list-apps \
+              --query "apps[?name=='${name_prefix}-frontend'].appId | [0]" \
+              --output text 2>/dev/null || true)"
+            import_if_missing "aws_amplify_app.frontend[0]" "$amplify_app_id"
+            if is_present_id "$amplify_app_id"; then
+              amplify_branch_name="$(aws amplify list-branches \
+                --app-id "$amplify_app_id" \
+                --query "branches[?branchName=='${TF_VAR_github_branch}'].branchName | [0]" \
+                --output text 2>/dev/null || true)"
+              if is_present_id "$amplify_branch_name"; then
+                import_if_missing "aws_amplify_branch.frontend[0]" "${amplify_app_id}/${amplify_branch_name}"
+              fi
+            fi
+          fi
+
           if aws s3api head-bucket --bucket "$asset_bucket" >/dev/null 2>&1; then
             import_if_missing "aws_s3_bucket.assets" "$asset_bucket"
             import_if_missing "aws_s3_bucket_versioning.assets" "$asset_bucket"
@@ -611,16 +627,41 @@ jobs:
       - name: Verify backend HTTPS health
         run: curl -fsS "${BACKEND_PUBLIC_URL}/health"
 
+      - name: Build frontend with production URLs
+        if: env.AMPLIFY_APP_ID != ''
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          npm run build
+
       - name: Trigger Amplify deployment
         if: env.AMPLIFY_APP_ID != ''
         run: |
           set -euo pipefail
-          JOB_ID=$(aws amplify start-job \
+          zip_file="${RUNNER_TEMP}/amplify-dist.zip"
+          rm -f "$zip_file"
+          (cd dist && zip -qr "$zip_file" .)
+
+          deployment_json="$(aws amplify create-deployment \
             --app-id "$AMPLIFY_APP_ID" \
             --branch-name "$GITHUB_REF_NAME" \
-            --job-type RELEASE \
-            --query "jobSummary.jobId" \
-            --output text)
+            --output json)"
+          JOB_ID="$(jq -r '.jobId' <<< "$deployment_json")"
+          ZIP_UPLOAD_URL="$(jq -r '.zipUploadUrl' <<< "$deployment_json")"
+
+          if [ -z "$JOB_ID" ] || [ "$JOB_ID" = "null" ] || [ -z "$ZIP_UPLOAD_URL" ] || [ "$ZIP_UPLOAD_URL" = "null" ]; then
+            echo "Amplify create-deployment did not return a job id and upload URL" >&2
+            exit 1
+          fi
+
+          curl -fsS -X PUT \
+            -H "Content-Type: application/zip" \
+            --upload-file "$zip_file" \
+            "$ZIP_UPLOAD_URL"
+          aws amplify start-deployment \
+            --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$GITHUB_REF_NAME" \
+            --job-id "$JOB_ID"
 
           for attempt in {1..60}; do
             STATUS=$(aws amplify get-job \
