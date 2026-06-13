@@ -15,7 +15,7 @@ resource "aws_db_subnet_group" "postgres" {
 resource "aws_db_instance" "postgres" {
   identifier              = "${local.name_prefix}-postgres"
   engine                  = "postgres"
-  engine_version          = var.postgres_engine_version != null && trimspace(var.postgres_engine_version) != "" ? trimspace(var.postgres_engine_version) : null
+  engine_version          = trimspace(coalesce(var.postgres_engine_version, "")) != "" ? trimspace(coalesce(var.postgres_engine_version, "")) : null
   instance_class          = var.db_instance_class
   allocated_storage       = var.db_allocated_storage
   max_allocated_storage   = 100
